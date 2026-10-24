@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#111111" id="tc">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="Финансы">
@@ -8,7 +9,9 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="description" content="Личный учёт доходов и расходов. Работает офлайн, данные хранятся только на устройстве.">
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>/* скрипт Telegram грузим только внутри Telegram: вне него он не тормозит открытие при плохой сети */
+try{var _h=location.hash||"",_ss="";try{_ss=sessionStorage.getItem("__telegram__initParams")||""}catch(e){}
+if(/tgWebApp(Data|Platform|Version)/.test(_h)||_ss||window.TelegramWebviewProxy)document.write('<script src="https://telegram.org/js/telegram-web-app.js"><\/script>')}catch(e){}</script>
 <script>try{
 /* Telegram Mini App: внутри Telegram есть initData; вне Telegram всё остаётся как раньше */
 var W=window.Telegram&&Telegram.WebApp,TGI=!!(W&&W.initData);window.__TG=TGI?W:null;
@@ -676,7 +679,6 @@ html.ncv .dg{content-visibility:visible}
 :root .dg .sw:not(.sd):last-child{border-bottom:0}
 /* индикатор облачной синхронизации (виден только внутри Telegram) */
 #cs{display:none;position:absolute;right:46px;top:50%;margin-top:-11px;height:22px;z-index:1;align-items:center;gap:5px;padding:0 7px;border-radius:11px;font-size:10.5px;line-height:1;letter-spacing:.01em;color:var(--m);white-space:nowrap;opacity:.9;transition:opacity .3s ease,color .3s ease;-webkit-tap-highlight-color:transparent}
-html.tgapp #cs{display:flex}
 #cs i{width:6px;height:6px;border-radius:50%;background:var(--g);flex:none;transition:background .3s ease}
 #cs[data-s=sync] i{background:var(--m2);animation:csp 1s ease-in-out infinite}
 #cs[data-s=err]{color:var(--rd);opacity:1}#cs[data-s=err] i{background:var(--rd)}
@@ -881,7 +883,8 @@ const S={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return
 // ================= Telegram Mini App: окружение и состояние облака =================
 const TGW=window.__TG||null,IN_TG=!!TGW;
 const CL={on:false,mute:false,ready:false,pre:false,busy:false,again:false,pending:false,timer:0,retryT:0,fails:0,st:'ok',lastErr:null,lh:'',lastSync:0,manual:false,
-  lt:(()=>{try{return Number(localStorage.getItem('finapp.mtime'))||0}catch{return 0}})()};
+  lt:(()=>{try{return Number(localStorage.getItem('finapp.mtime'))||0}catch{return 0}})(),
+  sb:(()=>{try{return localStorage.getItem('finapp.synch')||''}catch{return ''}})()};   // sb — хэш данных на момент последней удачной сверки (основа для слияния)
 // любое сохранение данных (save) сообщает сюда; вне Telegram и до первой сверки ничего не делает
 function cloudTouch(){if(!IN_TG||!CL.on||CL.mute)return;
   if(!CL.ready){CL.pre=true;return}
@@ -987,11 +990,19 @@ tx.forEach(t=>{t.amount=Number.isFinite(+t.amount)?Math.abs(+t.amount):0;if(type
   if(typeof t.note!=='string')t.note=t.note==null?'':String(t.note);
   if(Array.isArray(t.tags))t.tags=t.tags.filter(g=>typeof g==='string'&&g);else delete t.tags});
 if(!cfg.rates)cfg.rates={};if(!Array.isArray(cfg.cc))cfg.cc=[];if(!Array.isArray(cfg.curList))cfg.curList=[];if(!cfg.custom)cfg.custom=[];if(!cfg.catOv)cfg.catOv={};if(!cfg.limits||typeof cfg.limits!=='object')cfg.limits={};if(!Array.isArray(cfg.goals))cfg.goals=[];if(!Array.isArray(cfg.debts))cfg.debts=[];if(!Array.isArray(cfg.tplHide))cfg.tplHide=[];if(!Array.isArray(cfg.hide))cfg.hide=[];if(typeof cfg.carry!=='boolean')cfg.carry=true;if(!/^\d{4}-\d{2}$/.test(cfg.carryFrom||''))cfg.carryFrom=mk(new Date());delete cfg.openBal;tx=tx.filter(t=>!t.goal);tx.forEach(t=>{if(t.category==='savings')t.category='other';else if(t.category==='savout')t.category='in_other'});
-buildAll();
+// u — время последней правки операции (ставится в save() автоматически); нужен, чтобы при слиянии выиграла более свежая правка
+let _sn=new Map();
+function snapTx(stamp){const now=Date.now(),keep=new Map();
+  for(const t of tx){const{u,...r}=t,j=JSON.stringify(r);if(stamp&&_sn.get(t.id)!==j)t.u=now;keep.set(t.id,j)}
+  _sn=keep}
+// метки удаления: cfg.del = {id: время}; без них при слиянии удалённое «воскресло» бы с другого устройства
+const tomb=ids=>{if(!_obj(cfg.del))cfg.del={};const n=Date.now();[].concat(ids).forEach(id=>{if(id!=null&&id!=='')cfg.del[String(id)]=n})};
+const untomb=ids=>{if(!_obj(cfg.del))return;[].concat(ids).forEach(id=>{delete cfg.del[String(id)]})};
+buildAll();snapTx(false);
 let month=mk(new Date()),tab='list',drafts=[],undoIds=null,KD='expense',RG='month';
 function mk(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
 function ymd(d){return mk(d)+'-'+String(d.getDate()).padStart(2,'0')}
-const save=()=>{S.set('finapp.tx',tx);S.set('finapp.settings',cfg);S.set('finapp.learn',learn);cloudTouch()};
+const save=()=>{snapTx(true);S.set('finapp.tx',tx);S.set('finapp.settings',cfg);S.set('finapp.learn',learn);cloudTouch()};
 
 // переход на новый список категорий (один раз): старые операции, лимиты и повторы переезжают в новые категории
 if(cfg.catV!==2){
@@ -1048,9 +1059,11 @@ const _cre={};
 const curOf=w=>{if(!w)return null;w=String(w).toLowerCase().trim();for(const k of codes()){const src=curSrc(k),re=_cre[src]||(_cre[src]=new RegExp('^(?:'+src+')$'));if(re.test(w))return k}return null};
 // записать курс (1 единица валюты c в основной валюте) и пересчитать черновики
 let lastRateN=0,cadOpen=false;
-function setRate(c,v){v=parseFloat(String(v).replace(/\s/g,'').replace(',','.'))||0;cfg.rates[c]=v;needRate.delete(c);lastRateN=0;
-  if(v>0){drafts.forEach(d=>{if(d.oc===c&&d.oa>0)d.amount=Math.round(d.oa*v*100)/100});
-    tx.forEach(t=>{if(t.oc===c&&t.oa>0){const na=Math.round(t.oa*v*100)/100;if(na!==t.amount){t.amount=na;lastRateN++}}})}
+// Курс фиксируется в операции в момент записи (поле rt): смена курса не трогает прошлое.
+// Пересчитываются только черновики и операции, у которых суммы ещё нет (курс не был задан); all=true — пересчитать всё по явной просьбе.
+function setRate(c,v,all){v=parseFloat(String(v).replace(/\s/g,'').replace(',','.'))||0;cfg.rates[c]=v;needRate.delete(c);lastRateN=0;
+  if(v>0){drafts.forEach(d=>{if(d.oc===c&&d.oa>0){d.amount=Math.round(d.oa*v*100)/100;d.rt=v}});
+    tx.forEach(t=>{if(t.oc===c&&t.oa>0&&(all||!(t.amount>0))){const na=Math.round(t.oa*v*100)/100;if(na!==t.amount){t.amount=na;lastRateN++}t.rt=v}})}
   save();return v}
 const NUMW={один:1,одну:1,два:2,две:2,три:3,четыре:4,пять:5,шесть:6,семь:7,восемь:8,девять:9,десять:10};
 const NUMW2={...NUMW,двадцать:20,тридцать:30,сорок:40,пятьдесят:50,шестьдесят:60,семьдесят:70,восемьдесят:80,девяносто:90,сто:100,двести:200,триста:300,пятьсот:500,тысяча:1000};
@@ -1094,8 +1107,8 @@ function parse(raw){
     for(const[p,mm]of ps){
       let a=parseFloat(mm[1].replace(',','.'));if(mm[2]&&/^(т|к|k)/.test(mm[2]))a*=1000;
       if(!(a>0&&a<=1e12))continue;
-      let oc=null,oa=null;const cc=curOf(mm[3]);
-      if(cc&&cc!==cfg.cur){oc=cc;oa=a;const rt=parseFloat(cfg.rates[cc])||0;a=Math.round(a*rt*100)/100;if(!rt)needRate.add(cc)}
+      let oc=null,oa=null,rt0=0;const cc=curOf(mm[3]);
+      if(cc&&cc!==cfg.cur){oc=cc;oa=a;const rt=parseFloat(cfg.rates[cc])||0;rt0=rt;a=Math.round(a*rt*100)/100;if(!rt)needRate.add(cc)}
       let sgc=0;{const ch=s[mm.index-1];if(ch&&(mm.index<2||/\s/.test(s[mm.index-2]))){if(ch==='+')sgc=1;else if('-−–'.indexOf(ch)>=0)sgc=-1}}
       const low=' '+p.replace(/ё/g,'е')+' ';
       const inc=sgc?sgc>0:INCRE.test(low)||ALL.some(c=>INC.has(c.id)&&c.k.some(k=>k.length>3&&!(c.weak&&c.weak.has(k))&&kwHit(low,k)));
@@ -1106,7 +1119,7 @@ function parse(raw){
       note=note?note[0].toUpperCase()+note.slice(1):cd(cat).n;
       const d=new Date(today);if(/позавчера/.test(p))d.setDate(d.getDate()-2);else if(/вчера/.test(p))d.setDate(d.getDate()-1);else if(rel0&&!/сегодня/.test(p))d.setDate(d.getDate()-rel0);
       const tags=[...new Set(sg.tg.map(normTag).filter(Boolean))].slice(0,8);
-      out.push({id:uid(),type,amount:a,category:cat,note,date:dd||ymd(d),...(tags.length?{tags}:{}),...(oc?{oc,oa}:{})})}}
+      out.push({id:uid(),type,amount:a,category:cat,note,date:dd||ymd(d),...(tags.length?{tags}:{}),...(oc?{oc,oa,rt:rt0}:{})})}}
   if(pendT.length){const pt=[...new Set(pendT.map(normTag).filter(Boolean))];out.forEach(o=>o.tags=[...new Set([...(o.tags||[]),...pt])].slice(0,8))}
   return out}
 
@@ -1127,11 +1140,11 @@ function voiceCmds(raw){
   // бюджет
   take(new RegExp(B+'(?:(?:установи\\S*|поставь\\S*|задай\\S*|сделай\\S*|измени\\S*|новый|мой)\\s+)?бюджет(?:\\s+(?:на\\s+)?(?:месяц|мес\\S*))?\\s*(?:на\\s+|в размере\\s+|=|-|—|:)?\\s*'+AMT,'g'),
     m=>{const v=val(m,1);if(!(v>0))return false;cfg.budget=v;msgs.push('Бюджет: '+fmt(v)+' '+cfg.cur);return true});
-  // курс в строке: «курс евро 19.5», «1 евро = 19,5», «курс доллара = 17.8 лей» → записать курс и пересчитать все операции в этой валюте
+  // курс в строке: «курс евро 19.5», «1 евро = 19,5», «курс доллара = 17.8 лей» → записать курс (прошлые операции сохраняют свой курс)
   {const CW=curWords(),NUM='(\\d+(?:[.,]\\d+)?)',BW='(?:\\s*(?:'+curSrc(cfg.cur)+')(?=\\s|$))?';
    const setR=(w,n)=>{const cc=curOf(w);if(!cc||cc===cfg.cur)return false;const v=parseFloat(String(n).replace(',','.'));if(!(v>0))return false;
      setRate(cc,v);if(!cfg.curList.includes(cc))cfg.curList.push(cc);save();
-     msgs.push('Курс: 1 '+cc+' = '+fmt(v)+' '+cfg.cur+(lastRateN?' · пересчитано операций: '+lastRateN:''));return true};
+     msgs.push('Курс: 1 '+cc+' = '+fmt(v)+' '+cfg.cur+(lastRateN?' · посчитано операций без курса: '+lastRateN:''));return true};
    take(new RegExp(B+'курс\\S*\\s+(?:1\\s*)?('+CW+')(?=\\s|$|[=:—-])\\s*(?:=|:|—|-|равен|равна)?\\s*'+NUM+BW,'g'),m=>setR(m[1],m[2]));
    take(new RegExp(B+'1\\s*('+CW+')\\s*(?:=|:|—|-)\\s*'+NUM+BW,'g'),m=>setR(m[1],m[2]))}
   // взнос в цель: «в цель отпуск 5000», «отложил на отпуск 2000», «отложил 2000 на отпуск»
@@ -1205,7 +1218,7 @@ function run(){
 function commit(list,withUndo){
   tx=[...list,...tx];save();
   const f=list[list.length-1].date.slice(0,7);if(!list.some(x=>x.date.startsWith(month)))month=f;
-  render();const ln=limitNote(list);if(withUndo){const ids=new Set(list.map(x=>x.id));toast('Добавлено: '+list.length+(ln?' · '+ln:''),'Отмена',()=>{tx=tx.filter(x=>!ids.has(x.id));save();render()},'add')}}
+  render();const ln=limitNote(list);if(withUndo){const ids=new Set(list.map(x=>x.id));toast('Добавлено: '+list.length+(ln?' · '+ln:''),'Отмена',()=>{tx=tx.filter(x=>!ids.has(x.id));tomb([...ids]);save();render()},'add')}}
 $('#go').onclick=()=>{if(inp.value.trim())run();else if(drafts.length)commitDrafts();else inp.focus()};inp.onkeydown=e=>{if(e.key==='Enter'){if(inp.value.trim())run();else if(drafts.length)commitDrafts()}};
 const IDLE='Введите: траты, лимиты, цели, бюджет, долги',setHint=t=>{inp.placeholder=t};
 let ignore=false;
@@ -1306,7 +1319,7 @@ function lockBg(on){
     if(fb)fb.style.pointerEvents=on?'none':''};
   if(on)lockRaf=requestAnimationFrame(()=>{lockRaf=requestAnimationFrame(apply)});else apply();
 }
-function openSheet(){if(!drafts.length){const el=$('#rev');el.classList.remove('anim','clearing');el.innerHTML=''}syncAuto();cancelGestures();lockBg(true);setOrigin(sh,fab);sh.classList.add('on');ov.className='on';ignore=false;renderTpl();inp.focus({preventScroll:true})}
+function openSheet(){if(!drafts.length){const el=$('#rev');el.classList.remove('anim','clearing');el.innerHTML=''}syncAuto();cancelGestures();lockBg(true);setOrigin(sh,fab);sh.classList.add('on');ov.className='on';ignore=false;renderTpl()}
 function closeSheet(){cancelAuto();ignore=true;Voice.stopFor(micMain);sh.classList.remove('on');if(!isModalOpen()){ov.className='';lockBg(false)}cancelGestures()}
 fab.onclick=()=>{if(!isModalOpen())openSheet()};inp.oninput=()=>{cancelAuto();syncBtn()};
 sh.addEventListener('pointerdown',e=>{e.stopPropagation();if(autoT&&e.target.closest('.fld,#rev input,#rev select,#rev .sg,#rev .dp,#rev .cpb'))cancelAuto()});
@@ -1381,7 +1394,7 @@ function commitDrafts(){cancelAuto();drafts.forEach(d=>{delete d.addCat});const 
   $('#fab').classList.remove('has');commit(ok,true);closeSheet();
   setTimeout(()=>{if(!drafts.length&&!sh.classList.contains('on')){const el=$('#rev');el.classList.remove('anim','clearing');el.innerHTML='';syncBtn()}},700)}
 function edit(list,id,f,v,isDraft){const t=list.find(x=>x.id===id);if(!t)return;
-  if(f==='amount'){const na=Math.max(0,pn(v));if(t.oc&&na!==t.amount){delete t.oc;delete t.oa}t.amount=na}
+  if(f==='amount'){const na=Math.max(0,pn(v));if(t.oc&&na!==t.amount){delete t.oc;delete t.oa;delete t.rt}t.amount=na}
   else if(f==='category'){if(v==='__add')return;t.category=v;if(t.note)learn[norm(t.note)]=v}
   else if(f==='date'){if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return;t.date=v;if(!isDraft)month=v.slice(0,7)}
   else if(f==='tagadd'){addTags(t,v)}
@@ -1392,7 +1405,7 @@ function bind(root,list,isDraft){
     e.preventDefault();if(isDraft)cancelAuto();
     openCp(t.type,t.category,id=>{edit(list(),r.dataset.id,'category',id,isDraft);if(isDraft)renderRev(true)},()=>{if(isDraft)renderRev(true)})});
   root.addEventListener('change',e=>{const f=e.target.dataset.f,r=e.target.closest('[data-id]');if(!f||!r)return;
-    if(f==='rate'){const v=setRate(e.target.dataset.c,e.target.value);if(v>0){if(lastRateN){render();toast('Пересчитано операций: '+lastRateN)}renderRev(true);if(cfg.auto&&!inp.value.trim()&&drafts.every(d=>!d.oc||d.amount>0))startAuto()}return}
+    if(f==='rate'){const v=setRate(e.target.dataset.c,e.target.value);if(v>0){if(lastRateN){render();toast('Посчитано операций без курса: '+lastRateN)}renderRev(true);if(cfg.auto&&!inp.value.trim()&&drafts.every(d=>!d.oc||d.amount>0))startAuto()}return}
     const val=e.target.value;edit(list(),r.dataset.id,f,val,isDraft);
     if(isDraft&&f!=='note'){renderRev(true);
       if(f==='category'&&val==='__add'){const t=list().find(x=>x.id===r.dataset.id);if(t)openNc(t.type,id=>{t.category=id;if(t.note)learn[norm(t.note)]=id;renderRev(true)})}}});
@@ -1403,7 +1416,7 @@ function bind(root,list,isDraft){
   root.addEventListener('click',e=>{const dp=e.target.closest('.dp');if(dp){const i=dp.querySelector('input');try{if(i.showPicker)i.showPicker()}catch{}return}
     const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,r=b.closest('[data-id]'),L=list();
     if(a==='x'){const id=r.dataset.id;const i=L.findIndex(x=>x.id===id);if(i<0)return;const it=L[i];
-      if(isDraft){removeDraftAnim(id)}else{L.splice(i,1);tx=L;save();toastDel(1,()=>{tx.splice(Math.min(i,tx.length),0,it);save();fxCV();render();fxIn([it.id])});render()}}
+      if(isDraft){removeDraftAnim(id)}else{L.splice(i,1);tx=L;tomb(it.id);save();toastDel(1,()=>{untomb(it.id);tx.splice(Math.min(i,tx.length),0,it);save();fxCV();render();fxIn([it.id])});render()}}
     if(a==='cal'){openRow=openRow===r.dataset.id?null:r.dataset.id;if(isDraft)renderRev(true);else render()}
     if(a==='sg'){const t=L.find(x=>x.id===r.dataset.id);t.type=t.type==='income'?'expense':'income';t.category=detect(t.note,t.note,t.type);if(isDraft)renderRev(true);else{save();render()}}
     if(a==='tgx'){const t=L.find(x=>x.id===r.dataset.id);if(t){t.tags=(t.tags||[]).filter(g=>g!==b.dataset.tag);if(!t.tags.length)delete t.tags;if(isDraft)renderRev(true);else{save();render()}}}
@@ -1701,11 +1714,11 @@ function saveGoal(){if(!gT)return;if(gT.mode==='debt')return saveDebt();if(gT.mo
   if(gT.id){const g=cfg.goals.find(x=>x.id===gT.id);if(g)Object.assign(g,{name:nm,target:tg,saved:sv,plan:pl,tag,by});if(g){if(g.saved>=g.target){if(!g.closed)g.closed=ymd(new Date())}else delete g.closed}}
   else cfg.goals.push({id:uid(),name:nm,target:tg,saved:sv,plan:pl,tag,by,created:ymd(new Date()),log:[]});
   save();closeGoal();render()}
-function delGoal(){if(gT&&gT.mode==='debt'&&gT.id){const i=cfg.debts.findIndex(x=>x.id===gT.id);if(i<0){closeGoal();return}const it=cfg.debts[i];cfg.debts.splice(i,1);save();closeGoal();render();toast('Долг удалён','Отмена',()=>{cfg.debts.splice(Math.min(i,cfg.debts.length),0,it);save();render()},'del');return}
+function delGoal(){if(gT&&gT.mode==='debt'&&gT.id){const i=cfg.debts.findIndex(x=>x.id===gT.id);if(i<0){closeGoal();return}const it=cfg.debts[i];cfg.debts.splice(i,1);tomb(it.id);save();closeGoal();render();toast('Долг удалён','Отмена',()=>{untomb(it.id);cfg.debts.splice(Math.min(i,cfg.debts.length),0,it);save();render()},'del');return}
   if(gT&&gT.mode==='bud'){const o=cfg.budget;cfg.budget=0;save();closeGoal();render();toast('Бюджет убран','Отмена',()=>{cfg.budget=o;save();render()},'del');return}
   if(gT&&gT.mode==='lim'&&gT.id){const id=gT.id,o=cfg.limits[id];delete cfg.limits[id];save();closeGoal();render();toast('Лимит удалён','Отмена',()=>{cfg.limits[id]=o;save();render()},'del');return}
-  if(!gT||!gT.id)return;const i=cfg.goals.findIndex(x=>x.id===gT.id);if(i<0){closeGoal();return}const it=cfg.goals[i];cfg.goals.splice(i,1);save();closeGoal();render();
-  toast('Цель удалена','Отмена',()=>{cfg.goals.splice(Math.min(i,cfg.goals.length),0,it);save();render()},'del')}
+  if(!gT||!gT.id)return;const i=cfg.goals.findIndex(x=>x.id===gT.id);if(i<0){closeGoal();return}const it=cfg.goals[i];cfg.goals.splice(i,1);tomb(it.id);save();closeGoal();render();
+  toast('Цель удалена','Отмена',()=>{untomb(it.id);cfg.goals.splice(Math.min(i,cfg.goals.length),0,it);save();render()},'del')}
 function saveDep(){if(!gT)return;const g=cfg.goals.find(x=>x.id===gT.id),a=pn($('#gam').value);if(!g)return;if(!(a>0)){toast('Укажите сумму');return}
   const sg=gT.sign||1,real=goalDeposit(g,a,sg);if(g.saved>=g.target){if(!g.closed)g.closed=ymd(new Date())}else delete g.closed;
   save();closeGoal();render();
@@ -2084,8 +2097,8 @@ function setRv(w,rv,anim){const c=w.lastElementChild,b=w.firstElementChild;w.cla
 function closeSw(w){if(!w)return;w.classList.remove('armed');setRv(w,0,true);if(openSw===w)openSw=null}
 // данные удаляются и плашка «Удалено» выезжает сразу; перерисовка (defer) — позже, когда строка доехала
 function delTx(ids,defer,st){const set=new Set(ids),rem=[];tx.forEach((t,i)=>{if(set.has(t.id))rem.push([i,t])});if(!rem.length)return false;
-  tx=tx.filter(t=>!set.has(t.id));save();
-  toastDel(rem.length,()=>{if(st)st.undone=true;rem.forEach(([i,t])=>{tx.splice(Math.min(i,tx.length),0,t)});save();fxCV();render();fxIn(rem.map(r=>r[1].id))});
+  tx=tx.filter(t=>!set.has(t.id));tomb([...set]);save();
+  toastDel(rem.length,()=>{if(st)st.undone=true;untomb(rem.map(r=>r[1].id));rem.forEach(([i,t])=>{tx.splice(Math.min(i,tx.length),0,t)});save();fxCV();render();fxIn(rem.map(r=>r[1].id))});
   if(!defer)render();return true}
 // плавное схлопывание по высоте (WAAPI, iOS-кривая); возвращает Promise
 // на время удаления/возврата отключаем «ленивую» отрисовку групп: иначе после перерисовки на кадр подставляется оценочная высота и список дёргается
@@ -2223,13 +2236,13 @@ ${(()=>{const sg=allTags().filter(g=>!(t.tags||[]).includes(g)).slice(0,8);retur
 function saveEd(){if(!eT)return;readEd();if(!(eT.amount>0)){toast('Укажите сумму');return}
   const o=tx.find(x=>x.id===eT.id);if(!o){closeEdit();return}
   if(eT.category!==o.category&&eT.note)learn[norm(eT.note)]=eT.category;
-  if(o.oc&&eT.amount!==o.amount){delete o.oc;delete o.oa}
+  if(o.oc&&eT.amount!==o.amount){delete o.oc;delete o.oa;delete o.rt}
   if(eT.date!==o.date)month=eT.date.slice(0,7);
   if(eT.tags&&eT.tags.length)o.tags=eT.tags.slice();else delete o.tags;
     o.type=eT.type;o.amount=eT.amount;o.note=eT.note||cd(eT.category).n;o.category=eT.category;o.date=eT.date;
   save();closeEdit();render()}
-function delEd(){if(!eT)return;const i=tx.findIndex(x=>x.id===eT.id);if(i<0){closeEdit();return}const it=tx[i],st={undone:false};tx.splice(i,1);save();
-  toastDel(1,()=>{st.undone=true;tx.splice(Math.min(i,tx.length),0,it);save();fxCV();render();fxIn([it.id])});
+function delEd(){if(!eT)return;const i=tx.findIndex(x=>x.id===eT.id);if(i<0){closeEdit();return}const it=tx[i],st={undone:false};tx.splice(i,1);tomb(it.id);save();
+  toastDel(1,()=>{st.undone=true;untomb(it.id);tx.splice(Math.min(i,tx.length),0,it);save();fxCV();render();fxIn([it.id])});
   fxCV();const w=document.querySelector(`#body .sw[data-id="${it.id}"]`),dg=w&&w.closest('.dg'),tg=dg&&dg.querySelectorAll('.sw:not(.sd)').length===1?dg:w;
   closeEdit();if(!tg||RM){render();return}
   setTimeout(()=>{if(st.undone)return;fxCollapse(tg).then(()=>{if(!st.undone)render()})},170)}
@@ -2270,6 +2283,7 @@ function mkNb(t,s,key){const el=document.createElement('div');
   // как в итоговой раскладке (#sbw + #body): плашка и контент — отдельные блоки, поля между ними не схлопываются; иначе при замене страницы контент «садится» на пару пикселей
   {const bar=el.querySelector(':scope > .sbt');if(bar){const w=document.createElement('div');w.style.display='flow-root';el.insertBefore(w,bar);w.appendChild(bar);
     const r=document.createElement('div');r.style.display='flow-root';while(w.nextSibling)r.appendChild(w.nextSibling);el.appendChild(r)}}
+  if(t==='stats'&&(S?key:AS)==='all'){try{_pieSeen.add(month)}catch(e){}}
   return{el,t:key||t,s,off,bt}}
 function finishSlide(nb){
   bodyEl.style.transform='';bodyEl.style.willChange='';
@@ -2451,7 +2465,7 @@ tbEl.addEventListener('pointercancel',e=>endTbd(e,true));
 let qRaf=0;const qRender=()=>{clearTimeout(qRaf);qRaf=setTimeout(()=>{qRaf=0;render()},90)};
 $('#q').oninput=e=>{q=e.target.value;qRender()};
 function setSearch(on){const fl=$('#fl'),b=$('#srch');fl.inert=!on;fl.classList.toggle('open',on);document.querySelector('.hd').classList.toggle('sr',on);b.classList.toggle('on',on);b.setAttribute('aria-expanded',on);
-  if(on){if(tab!=='list'){tab='list';render()}$('#q').focus({preventScroll:true})}else{Voice.stopFor(micQ);const had=!!q||fOn();clearTimeout(qRaf);qRaf=0;$('#q').value='';q='';fReset(true);$('#q').blur();if(had)render()}}
+  if(on){if(tab!=='list'){tab='list';render()}}else{Voice.stopFor(micQ);const had=!!q||fOn();clearTimeout(qRaf);qRaf=0;$('#q').value='';q='';fReset(true);$('#q').blur();if(had)render()}}
 // голосовой поиск (микрофон справа в строке поиска)
 const QPH='Заметки и категории';
 var micQ={
@@ -2785,7 +2799,7 @@ function importData(text){
   try{const d=JSON.parse(text);if(!d||!Array.isArray(d.tx))throw 0;
     const sid=v=>String(v==null?'':v).replace(/[^\w-]/g,'').slice(0,40),isHex=v=>/^#[0-9a-f]{6}$/i.test(String(v));
     const have=new Set(tx.map(t=>t.id)),hadTx=tx.length>0;
-    const add=d.tx.filter(t=>t&&sid(t.id)&&!have.has(sid(t.id))&&/^\d{4}-\d{2}-\d{2}/.test(String(t.date))&&(t.type==='income'||t.type==='expense')).map(t=>({id:sid(t.id),type:t.type,amount:Math.max(0,Number(t.amount)||0),category:sid(t.category)||(t.type==='income'?'in_other':'other'),note:String(t.note||''),date:String(t.date).slice(0,10),...(Array.isArray(t.tags)&&t.tags.map(normTag).filter(Boolean).length?{tags:[...new Set(t.tags.map(normTag).filter(Boolean))].slice(0,8)}:{}),...(t.oc?{oc:String(t.oc),oa:Number(t.oa)||0}:{}),...(t.rid?{rid:sid(t.rid)}:{})}));
+    const add=d.tx.filter(t=>t&&sid(t.id)&&!have.has(sid(t.id))&&/^\d{4}-\d{2}-\d{2}/.test(String(t.date))&&(t.type==='income'||t.type==='expense')).map(t=>({id:sid(t.id),type:t.type,amount:Math.max(0,Number(t.amount)||0),category:sid(t.category)||(t.type==='income'?'in_other':'other'),note:String(t.note||''),date:String(t.date).slice(0,10),...(Array.isArray(t.tags)&&t.tags.map(normTag).filter(Boolean).length?{tags:[...new Set(t.tags.map(normTag).filter(Boolean))].slice(0,8)}:{}),...(t.oc?{oc:String(t.oc),oa:Number(t.oa)||0,...(Number(t.rt)>0?{rt:Number(t.rt)}:{})}:{}),...(t.rid?{rid:sid(t.rid)}:{})}));
     const hasExtra=!!(d.cfg&&(Number(d.cfg.budget)>0||(d.cfg.goals||[]).length||(d.cfg.debts||[]).length||(d.cfg.rec||[]).length||(d.cfg.custom||[]).length));
     if(!add.length&&!hasExtra){toast('Новых данных в файле нет');return}
     bqAsk('Импорт копии',add.length?'Добавить операций из файла: '+add.length+'? Настройки, цели и долги из файла тоже добавятся.':'Новых операций нет. Добавить из файла настройки, цели и долги?','Добавить',()=>applyData(d,{add,sid,isHex,hadTx}));}
@@ -2834,7 +2848,7 @@ function applyReplace(d){
     tx=_okArr(d.tx,t=>_obj(t));
     cfg={cur:'MDL',budget:0,auto:false,rates:{},custom:[],catOv:{},...(_obj(d.cfg)?d.cfg:{})};
     learn=_obj(d.learn)?d.learn:{};
-    normState();buildAll();save()}
+    normState();buildAll();snapTx(false);save()}
   finally{CL.mute=false}
   applyTheme(false);render();renderSt()}
 // ---- окно «Валюта и курсы» / «Категории, лимиты и бюджет» ----
@@ -2864,7 +2878,10 @@ ${cadOpen?`<div class="cpl">${rest.map(c=>`<button type="button" class="cpi" dat
       if(!has){apply(0);return}
       if(rt>0)bqAsk('Сменить валюту на '+nc+'?','Курс: 1 '+nc+' = '+fmt(rt)+' '+oc+'. Все суммы (операции, бюджет, лимиты, цели, долги, повторяющиеся) будут пересчитаны в '+nc+'.','Пересчитать',()=>apply(1/rt));
       else bqAsk('Сменить валюту на '+nc+'?','Курс 1 '+nc+' в '+oc+' не задан, поэтому суммы не пересчитаются: останутся прежними числами, но будут считаться в '+nc+'. Чтобы пересчитать, сначала введите курс ниже.','Без пересчёта',()=>apply(0))};
-    cf.querySelectorAll('.rt').forEach(i=>i.onchange=()=>{setRate(i.dataset.c,i.value);if(lastRateN){render();toast('Пересчитано операций: '+lastRateN)}if(drafts.length)renderRev(true)});
+    cf.querySelectorAll('.rt').forEach(i=>i.onchange=()=>{const c=i.dataset.c,v=setRate(c,i.value);if(lastRateN){render();toast('Посчитано операций без курса: '+lastRateN)}if(drafts.length)renderRev(true);
+      // прошлые операции сохраняют курс на момент записи; пересчёт — только по явному согласию
+      if(v>0){const n=tx.filter(t=>t.oc===c&&t.oa>0&&t.amount>0&&Math.round(t.oa*v*100)/100!==t.amount).length;
+        if(n)bqAsk('Пересчитать прошлые операции?','Операции в '+c+' ('+n+' шт.) сохраняют курс, который действовал при записи. Пересчитать их по новому курсу 1 '+c+' = '+fmt(v)+' '+cfg.cur+'?','Пересчитать',()=>{setRate(c,v,true);render();toast('Пересчитано операций: '+lastRateN)})}});
     const addCur=c=>{if(!/^[A-Z]{3}$/.test(c)||c===cfg.cur){toast('Введите код из 3 букв, например GBP');return}
       if(!CURS[c]&&!cfg.cc.includes(c))cfg.cc.push(c);if(!cfg.curList.includes(c))cfg.curList.push(c);save();cadOpen=false;renderCf();
       const n=cf.querySelector('.rt[data-c="'+c+'"]');if(n)n.focus()};
@@ -2924,7 +2941,7 @@ bq.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(a==='cancel'){bqCb=null;closeBq()}
   else if(a==='askyes'){const cb=bqCb;bqCb=null;closeBq();if(cb)setTimeout(cb,30)}
   else if(a==='toreset'){bqT='reset';bq.innerHTML=bqHtml('reset')}
-  else if(a==='reset'){const oTx=tx,oLn=learn;tx=[];learn={};save();closeBq();render();toast('Все операции удалены','Отмена',()=>{tx=oTx;learn=oLn;save();render()},'del')}
+  else if(a==='reset'){const oTx=tx,oLn=learn;tx=[];learn={};tomb(oTx.map(t=>t.id));save();closeBq();render();toast('Все операции удалены','Отмена',()=>{untomb(oTx.map(t=>t.id));tx=oTx;learn=oLn;save();render()},'del')}
   else if(a==='json'){exportJSON();closeBq();toast('Копия сохранена · JSON',null,null,'save')}
   else if(a==='xlsx'){exportXLSX();closeBq();if(tx.length){cfg.lastBackup=Date.now();save();toast('Копия сохранена · Excel',null,null,'save')}}
   else if(a==='imp'){$('#fi').accept='.xlsx,.xlsm,.csv,.tsv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';$('#fi').click();closeBq()}
@@ -2964,7 +2981,7 @@ function cpDel(){const s=cpS,c=cd(s.id);if(CPROT.includes(c.id))return;
     tx.forEach(t=>{if(t.category===id)t.category=fb});drafts.forEach(t=>{if(t.category===id)t.category=fb});
     if(eT&&eT.category===id)eT.category=fb;
     Object.keys(learn).forEach(k=>{if(learn[k]===id)delete learn[k]});(cfg.rec||[]).forEach(r=>{if(r.category===id)r.category=fb});
-    if(c.custom)cfg.custom=cfg.custom.filter(x=>x.id!==id);else cfg.hide=(cfg.hide||[]).filter(h=>h!==id).concat(id);
+    if(c.custom){cfg.custom=cfg.custom.filter(x=>x.id!==id);tomb(id)}else cfg.hide=(cfg.hide||[]).filter(h=>h!==id).concat(id);
     delete cfg.catOv[id];delete cfg.limits[id];
     buildAll();save();render();
     if(cpS){if(cpS.cur===id)cpS.cur=fb;cpS.view='grid';cpRender();if(cpS.chg)cpS.chg()}})}
@@ -3138,8 +3155,8 @@ function rcSave(){rcCollect();const f=rcS.f,am=pn(f.amount),td=ymd(new Date());
   rcS={view:'list'};rcRender();rcEl.scrollTop=0;
   const nx=recNext(r);toast(n?'Сохранено · запись на сегодня добавлена':nx?'Сохранено · следующая: '+recDate(nx):'Сохранено')}
 function rcDel(){const i=cfg.rec.findIndex(x=>x.id===rcS.id);if(i<0){rcS={view:'list'};rcRender();return}
-  const it=cfg.rec[i];cfg.rec.splice(i,1);save();rcS={view:'list'};rcRender();
-  toast('Повтор удалён','Отмена',()=>{cfg.rec.splice(Math.min(i,cfg.rec.length),0,it);save();if(rcS&&rcS.view==='list')rcRender()},'del')}
+  const it=cfg.rec[i];cfg.rec.splice(i,1);tomb(it.id);save();rcS={view:'list'};rcRender();
+  toast('Повтор удалён','Отмена',()=>{untomb(it.id);cfg.rec.splice(Math.min(i,cfg.rec.length),0,it);save();if(rcS&&rcS.view==='list')rcRender()},'del')}
 // пауза: записи не создаются; при возобновлении пропущенные за время паузы не добавляются
 function rcPause(id){const r=cfg.rec.find(x=>x.id===id);if(!r)return;
   r.paused=!r.paused;if(!r.paused)r.start=ymd(new Date());
@@ -3278,6 +3295,44 @@ async function cloudPull(m){const hb=cloudHash();let d;
   try{if(applyRec())render()}catch{}
   toast('Данные обновлены из облака')}
 
+// ---- слияние: правки на двух устройствах объединяются, а не затирают друг друга ----
+function cloudBase(h){if(!h)return;CL.sb=h;try{localStorage.setItem('finapp.synch',h)}catch{}}
+function mergeCloudData(d){
+  CL.mute=true;
+  try{
+    const dc=_obj(d.cfg)?d.cfg:{},now=Date.now(),old=now-400*864e5,del={};
+    [dc.del,cfg.del].forEach(o=>{if(_obj(o))Object.entries(o).forEach(([k,v])=>{v=+v||0;if(v>old&&v>(del[k]||0))del[k]=v})});
+    const dead=id=>id!=null&&del[String(id)]!=null;
+    // операции: объединение по id; одна и та же — берём правку посвежее (u), при равенстве — локальную
+    const cl=new Map();_okArr(d.tx,_obj).forEach(t=>{if(t.id!=null&&t.id!=='')cl.set(String(t.id),t)});
+    const out=[],seen=new Set(),rk=new Set();
+    const put=t=>{const id=String(t.id);if(dead(id))return;
+      if(t.rid){const k=t.rid+'|'+t.date;if(rk.has(k)){del[id]=now;return}rk.add(k)}   // одна и та же повторяющаяся запись, созданная на двух устройствах
+      out.push(t)};
+    tx.forEach(t=>{const id=String(t.id);seen.add(id);const c=cl.get(id);put(c&&(+c.u||0)>(+t.u||0)?c:t)});
+    cl.forEach((c,id)=>{if(!seen.has(id))put(c)});
+    // списки с id (цели, долги, повторы, свои категории): объединение, при совпадении — локальная версия
+    const un=(a,b)=>{const o=[],sn=new Set();_okArr(a).concat(_okArr(b)).forEach(x=>{const id=x&&x.id!=null?String(x.id):'';if(!id||sn.has(id)||dead(id))return;sn.add(id);o.push(x)});return o};
+    const arr=(a,b)=>[...new Set([...(Array.isArray(a)?a:[]),...(Array.isArray(b)?b:[])])];
+    const mg={...dc,...cfg};                                  // одиночные настройки: выигрывают локальные
+    ['goals','debts','rec','custom'].forEach(k=>{mg[k]=un(cfg[k],dc[k])});
+    ['rates','limits','catOv'].forEach(k=>{mg[k]={...(_obj(dc[k])?dc[k]:{}),...(_obj(cfg[k])?cfg[k]:{})}});
+    ['cc','curList','tplHide'].forEach(k=>{mg[k]=arr(cfg[k],dc[k])});
+    mg.del=del;
+    cfg=mg;tx=out;learn={...(_obj(d.learn)?d.learn:{}),...learn};
+    normState();buildAll();snapTx(false);save()}
+  finally{CL.mute=false}
+  applyTheme(false);render();renderSt()}
+async function cloudMerge(m){
+  const d=await cloudRead(m);                               // повреждено/дописывается → ошибка → повтор позже
+  if(isModalOpen()){CL.retryT=setTimeout(()=>cloudSync('modal'),2500);return 'defer'}   // не меняем данные под открытым окном
+  try{if(tx.length){const b=JSON.stringify(collectData());if(b.length<9e5)localStorage.setItem('finapp.bak',b)}}catch{}   // страховка: локальные данные до слияния
+  mergeCloudData(d);
+  CL.lt=Date.now();cloudPersist();
+  await cloudPush();
+  try{if(applyRec())render()}catch{}
+  toast('Данные с двух устройств объединены')}
+
 // ---- ошибки ----
 function cloudErr(e){const m=String((e&&e.message)||e||'');
   if(e&&e.nodecomp)return {t:'fatal',m:'Облачные данные сжаты, а это устройство не умеет их распаковывать. Откройте приложение на другом устройстве или обновите Telegram.'};
@@ -3305,12 +3360,16 @@ async function cloudSync(why){
     const hNow=cloudHash(),edited=hNow!==h0;       // правки, сделанные, пока шёл запрос
     if(m&&m.bad)m=null;
     let r;
+    const base=CL.sb,lch=!!base&&hNow!==base,cch=!!base&&!!m&&m.h!==base;   // менялось ли что-то у нас / в облаке с прошлой сверки
     if(!m){if(cloudHas())await cloudPush();else CL.lh=hNow}                // в облаке пусто
     else if(m.h===hNow){CL.lt=m.t;cloudPersist();CL.lh=hNow}               // данные уже одинаковые
-    else if(!edited&&m.t>CL.lt)r=await cloudPull(m);                       // облачная версия новее локальной
+    else if(lch&&cch)r=await cloudMerge(m);                                // менялось и у нас, и в облаке — объединяем
+    else if(base&&cch&&!lch&&!edited)r=await cloudPull(m);                 // изменилось только в облаке (часы устройств не важны)
+    else if(base&&lch&&!cch)await cloudPush();                             // изменилось только у нас
+    else if(!edited&&m.t>CL.lt)r=await cloudPull(m);                       // основы нет (первый запуск после обновления): новее по времени
     else await cloudPush();                                                // локальная новее (или равна, но изменена)
     if(r==='defer')defer=true;
-    else{ok=true;CL.lastSync=Date.now();CL.fails=0;CL.lastErr=null;CL.errShown='';csSet('ok','');if(CL.manual)toast('Облако Telegram: всё сохранено')}
+    else{ok=true;cloudBase(CL.lh);CL.lastSync=Date.now();CL.fails=0;CL.lastErr=null;CL.errShown='';csSet('ok','');if(CL.manual)toast('Облако Telegram: всё сохранено')}
   }catch(e){cloudFail(e)}
   finally{
     CL.busy=false;CL.manual=false;
@@ -3409,13 +3468,6 @@ async function cloudSync(why){
   document.addEventListener('focusin',e=>{if(e.target&&e.target.matches&&e.target.matches('input,textarea'))hold(1000)},true);
 })();
 </script><script>
-// ---------- напоминание о резервной копии (раз в неделю, не чаще раза в сутки) ----------
-setTimeout(()=>{try{if(tx.length<5)return;const n=Date.now();
-  if(cfg.lastBackup&&n-cfg.lastBackup<7*864e5)return;
-  if(cfg.backupSnooze&&n<cfg.backupSnooze)return;
-  if(typeof isModalOpen==='function'&&isModalOpen())return;
-  cfg.backupSnooze=n+864e5;save();
-  toast(cfg.lastBackup?'💾 Копия данных старше недели':'💾 Копии данных ещё нет','Сохранить',()=>openBq('save'),'save')}catch(e){}},3500);
 // ---------- PWA: офлайн-режим (service worker) ----------
 if('serviceWorker' in navigator&&location.protocol!=='file:'){
   const sw=navigator.serviceWorker,hadCtl=!!sw.controller;let reloading=false;
@@ -3646,7 +3698,7 @@ function showStep(first){
     cDots.hidden=n<2;cSkip.hidden=n<2;
     cNext.textContent=n<2?'Понятно':(a.i===n-1?'Готово':'Далее');
     const el=resolve(s);
-    if(el){visible(el);last='';a.dock=null;place(el,first)}
+    if(el){const sc=visible(el);last='';a.side=null;a.force=!sc;a.done=false;place(el,first)}
     card.classList.remove('swap');
   },swap?140:0)}
 
@@ -3659,19 +3711,21 @@ function end(kind,silent){
   cool=Date.now()+1000;
   root.classList.remove('on');
   setTimeout(()=>{if(!active)root.className=''},420);
-  if(a.id==='sheet'&&q('#sh.on')){try{q('#inp').focus({preventScroll:true})}catch(e){}}}
+}
 
 // не прокручиваем крупные цели и закреплённые элементы; остальное подводим к центру
 function visible(el){
-  if(el.closest('#tabs,#fab,#sh,#stw,.hd'))return;
+  if(el.closest('#tabs,#fab,#sh,#stw,.hd'))return false;
   const r=el.getBoundingClientRect(),vh=innerHeight;
-  if(r.height>vh*.55)return;
-  if(r.top<pT.offsetHeight+10||r.bottom>vh-pB.offsetHeight-110)el.scrollIntoView({block:'center',behavior:RM?'auto':'smooth'})}
+  if(r.height>vh*.55)return false;
+  if(r.top<pT.offsetHeight+10||r.bottom>vh-pB.offsetHeight-110){el.scrollIntoView({block:'center',behavior:RM?'auto':'smooth'});return true}
+  return false}
 
 function place(el,instant){
   const s=active.steps[active.i],r=el.getBoundingClientRect(),key=[r.left,r.top,r.width,r.height].map(Math.round).join();
-  if(!instant&&key===last){const a=active;if(a.rect&&++a.still===16)placeCard(a.rect,false,true);return}
-  last=key;active.still=0;
+  // пока цель движется (прокрутка, рост графика), карточка стоит на месте; когда цель замерла — один раз плавно встаёт рядом
+  if(!instant&&key===last){const a=active;if(a.rect&&!a.done&&++a.still>=10){a.done=true;placeCard(a.rect,false,true)}return}
+  last=key;active.still=0;active.done=false;
   const p=s.pad==null?6:s.pad,x=r.left-p,y=r.top-p,w=r.width+p*2,h=r.height+p*2;
   const br=getComputedStyle(el).borderTopLeftRadius;
   let rad=br.indexOf('%')>-1?Math.min(w,h)/2:(parseFloat(br)||0)+p;
@@ -3680,24 +3734,27 @@ function place(el,instant){
   active.rect={l:x,t:y,r:x+w,b:y+h};
   placeCard(active.rect,instant,false)}
 
-function placeCard(r,instant,flip){
-  // карточка всегда по центру и стоит в одном из двух мест: сверху (по умолчанию) или внизу, если сверху она закрыла бы цель.
-  // Место выбирается один раз на шаг и меняется только после того, как цель остановилась, — поэтому карточка не прыгает.
-  const A=active,vw=innerWidth,vh=innerHeight,m=12,top=pT.offsetHeight+m,bot=vh-pB.offsetHeight-m;
+function placeCard(r,instant,settled){
+  // карточка стоит рядом с пунктом: под ним, если там есть место, иначе над ним, а у крупной цели — у верхнего или нижнего края.
+  // Сторона выбирается один раз на шаг и меняется, только если перестала помещаться; двигается карточка лишь когда цель замерла.
+  const A=active;
+  if(!instant&&!settled&&!A.force)return;
+  A.force=false;
+  const vw=innerWidth,vh=innerHeight,m=12,gap=14,top=pT.offsetHeight+m,bot=vh-pB.offsetHeight-m;
   const cw=card.offsetWidth,ch=card.offsetHeight;
-  const x=Math.round((vw-cw)/2);
-  const ov=(t,b)=>Math.max(0,Math.min(r.b,b)-Math.max(r.t,t));
-  const oT=ov(top-6,top+ch+6),oB=ov(bot-ch-6,bot+6);
-  const want=oT===0?'top':oB===0?'bot':(oT<=oB?'top':'bot');
-  if(!A.dock)A.dock=want;
-  else if(flip&&want!==A.dock&&(A.dock==='top'?oT>0:oB>0))A.dock=want;
-  const y=Math.round(A.dock==='top'?top:Math.max(top,bot-ch));
-  if(instant){   // первое появление: плавно опускается сверху
+  const x=Math.round(clamp((r.l+r.r)/2-cw/2,m,vw-cw-m));
+  const below=bot-(r.b+gap),above=(r.t-gap)-top;
+  const fits=k=>k==='below'?below>=ch:k==='above'?above>=ch:true;
+  if(!A.side||!fits(A.side))A.side=below>=ch?'below':above>=ch?'above':'dock';
+  let y=A.side==='below'?r.b+gap:A.side==='above'?r.t-gap-ch:((r.t+r.b)/2>vh/2?top:bot-ch);
+  y=Math.round(clamp(y,top,Math.max(top,bot-ch)));
+  if(instant){   // первое появление: чуть опускается сверху и проявляется
     card.style.transition='none';
-    card.style.setProperty('--x',x+'px');card.style.setProperty('--y',(y-(RM?0:30))+'px');
+    card.style.setProperty('--x',x+'px');card.style.setProperty('--y',(y-(RM?0:14))+'px');
     void card.offsetWidth;card.style.transition=''}
-  else card.style.setProperty('--x',x+'px');
-  card.style.setProperty('--y',y+'px')}
+  else if(A.cy!=null&&Math.abs(A.cy-y)<3&&A.cx===x)return;
+  A.cx=x;A.cy=y;
+  card.style.setProperty('--x',x+'px');card.style.setProperty('--y',y+'px')}
 
 // следим за целью каждый кадр: окно выезжает, страница прокручивается, появляется клавиатура — подсветка не отстаёт
 function loop(){
