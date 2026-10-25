@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://open.er-api.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#111111" id="tc">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="Финансы">
@@ -18,6 +18,7 @@ var W=window.Telegram&&Telegram.WebApp,TGI=!!(W&&W.initData);window.__TG=TGI?W:n
 window.tgChrome=function(l){if(!TGI)return;var c=l?"#e4e4e1":"#111111";try{W.setBackgroundColor(c)}catch(e){}try{W.isVersionAtLeast("6.9")&&W.setHeaderColor(c)}catch(e){}try{W.isVersionAtLeast("7.10")&&W.setBottomBarColor(c)}catch(e){}};
 if(TGI){document.documentElement.classList.add("tgapp");try{W.ready()}catch(e){}try{W.expand()}catch(e){}try{W.isVersionAtLeast("7.7")&&W.disableVerticalSwipes()}catch(e){}}
 var _s=JSON.parse(localStorage.getItem("finapp.settings")||"null"),_t=(_s&&_s.theme)||(TGI?"auto":""),_l=_t==="light"||(_t==="auto"&&(TGI?W.colorScheme==="light":(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)));if(_l){document.documentElement.setAttribute("data-theme","light");document.getElementById("tc").content="#e4e4e1"}window.tgChrome(_l)}catch(e){}</script>
+<script>/* замок: если включён PIN, прячем приложение до ввода — ещё до первой отрисовки */try{if(localStorage.getItem("finapp.lock"))document.documentElement.classList.add("locked")}catch(e){}</script>
 <title>Финансы</title>
 <style>
 :root{--sat:calc(max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px));--sab:calc(max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px)) + var(--tg-content-safe-area-inset-bottom,0px));--g:#8fc9a0;--rd:#e39090;--bg:#111;--s:#181818;--l:#2a2a2a;--t:#f2f2f2;--m:#8a8a8a;--m2:#9a9a9a;--on:#111;--prh:#d8d8d8;--b1:#3a3a3a;--b2:#555;--b3:#333;--l2:#202020;--tx2:#c8c8c8;--wr:255,255,255;--gl:30,30,30;--gl2:30,30,32;--bgr:17,17,17;--tp1:#2b2b2b;--tp2:#202020;--tp3:#424242;--toast:#1c1c1c;color-scheme:dark;box-sizing:border-box;padding-top:var(--sat);padding-bottom:var(--sab)}
@@ -828,6 +829,32 @@ html.intro #tabs,html.intro #fab{animation:inUp .9s cubic-bezier(.22,1,.36,1) .4
 @media (max-height:600px){#tour .tr-vis{height:112px}#tour .v1{width:84px;height:84px}}
 @media (prefers-reduced-motion:reduce){#tour,#tour *{animation:none!important;transition:none!important}}
 
+
+/* ---- блокировка приложения (PIN) ---- */
+#lk{display:none;position:fixed;inset:0;z-index:2147483640;background:var(--bg);color:var(--t);flex-direction:column;align-items:center;justify-content:center;padding:calc(var(--sat) + 16px) 20px calc(var(--sab) + 16px);overflow:auto;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+html.locked #lk,#lk.on{display:flex}
+html.locked body>*:not(#lk),html.locked body>*:not(#lk) *{visibility:hidden!important}
+#lk .lkc{width:100%;max-width:320px;display:flex;flex-direction:column;align-items:center;gap:18px}
+#lk .lkt{font-size:18px;font-weight:600}
+#lk .lks{font-size:13px;color:var(--m2);min-height:18px;text-align:center;line-height:1.4}
+#lk .lks.lkw{max-width:290px;font-size:14px;min-height:0}
+#lk .lkd{display:flex;gap:14px;height:16px;align-items:center}
+#lk .lkd i{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--b2);transition:background-color .15s,border-color .15s}
+#lk .lkd i.f{background:var(--t);border-color:var(--t)}
+#lk .lkd.bad{animation:lkshake .4s}
+@keyframes lkshake{20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+#lk .lkp{display:grid;grid-template-columns:repeat(3,72px);gap:14px 22px;justify-content:center;margin-top:4px}
+#lk .lkp button{width:72px;height:72px;border-radius:50%;background:var(--s);border:.5px solid var(--b3);font-size:26px;color:var(--t);display:flex;align-items:center;justify-content:center;touch-action:manipulation;padding:0}
+#lk .lkp button:active{background:var(--l)}
+#lk .lkp button.ghost{background:none;border-color:transparent;font-size:22px;color:var(--m2)}
+#lk .lkp button[hidden]{visibility:hidden;display:flex}
+#lk .lkx{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+#lk .lkx button{font-size:13px;color:var(--m2);padding:8px 10px}
+#lk .lkx .lkdel{color:var(--rd)}
+/* галочка «записать как расход» / «обновлять автоматически» */
+.lnk{display:flex;align-items:center;gap:10px;padding:10px 2px;font-size:13px;color:var(--m2);cursor:pointer;line-height:1.35}
+.lnk input[type=checkbox]{flex:none;width:19px;height:19px;min-width:0;max-width:none;padding:0;margin:0;accent-color:var(--g);text-align:left}
+
 </style></head>
 <body><div id="spl" aria-hidden="true">
 <svg class="spl-logo" viewBox="96 96 320 320" width="132" height="132" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
@@ -875,6 +902,7 @@ html.intro #tabs,html.intro #fab{animation:inUp .9s cubic-bezier(.22,1,.36,1) .4
 <input type="file" id="fi" accept=".json,.xlsx,.xlsm,.xls,.csv,.tsv,.txt,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
 <datalist id="tgl"></datalist>
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="lk" role="dialog" aria-modal="true" aria-label="Блокировка"></div>
 <script>
 const $=s=>document.querySelector(s),E=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let _sfT=0;
@@ -911,6 +939,7 @@ const CAT={e:[
 ['work','Работа','#39e0c0','инструмент|щетк|платформ|светильник|капкат|мастерам|мастер |оборудован|нож для|ножей|перчатк|спецовк|роба|рабочая|рабочие|рабочий|для работы|по работе|строй|материал|шпаклев|сетка|дюбел|саморез|болгарк|перфоратор|дрел|шуруповерт|лестниц|леса|каска|респиратор|штукатурк|утеплител|клинкер|плитк|затирк|грунт|кисть|шпатель|рулетк|цемент|раствор|монтажн'],
 ['debt','Долг','#4d8dff','долг|займ|одолжил|взаймы|занял|в долг|кредит|рассрочк|возврат долга'],
 ['kid','Ребенок','#2be4a0','ребен|малыш|малышк|дочк|дочур|коляск|ванночк|памперс|подгузник|пеленк|прикорм|детск|документ|гражданств|справк|уходовая косметика|уходовая|соск|бутылочк|присыпк|ползунк|манеж|автокресл|горшок|ливиу|погремушк|кроватк|игрушк|садик|ходунки'],
+['save','Накопления','#9bd7c5',''],
 ['other','Прочее','#777','']],
 i:[
 ['salary','Зарплата','#39ff88','зарплат|получк|оклад|расчет|зп |премия|премии|премию|премиальн|13-я|тринадцатая|отпускн|больничн|надбавк|сдельн'],
@@ -940,7 +969,7 @@ function pickColor(inc,used){let best=null,bd=-1;
 const dot=id=>`<i class="cdot" style="background:${cd(id).c}"></i>`;
 let ALL=[],INC=new Set();
 const noEmo=t=>{const r=String(t==null?'':t).replace(/[\u{1F000}-\u{1FAFF}\u2600-\u27BF\u2B00-\u2BFF\u200d\ufe0f\u20e3\u2764]+/gu,'').replace(/\s+/g,' ').trim();return r||String(t==null?'':t)};
-const EMO={food:'🍜',transport:'🚖',fun:'🎉',phone:'📞',byt:'🪑',comm:'🧾',tithe:'🫳🏼',plush:'🙈',rel:'👩‍❤️‍👨',health:'🧘🏼',clothes:'🧥',beauty:'💄',edu:'📙',gift:'🎁',fees:'',hobby:'🧸',work:'⚒️',debt:'💸',kid:'👶',other:'📦',salary:'💰',adv:'💵',hobbyin:'🧸',wsal:'🏡',in_other:'💵'};
+const EMO={food:'🍜',transport:'🚖',fun:'🎉',phone:'📞',byt:'🪑',comm:'🧾',tithe:'🫳🏼',plush:'🙈',rel:'👩‍❤️‍👨',health:'🧘🏼',clothes:'🧥',beauty:'💄',edu:'📙',gift:'🎁',fees:'',hobby:'🧸',work:'⚒️',debt:'💸',kid:'👶',save:'🐖',other:'📦',salary:'💰',adv:'💵',hobbyin:'🧸',wsal:'🏡',in_other:'💵'};
 // подбор эмодзи по смыслу названия (для своих и переименованных категорий)
 const GUESS=[[/кофе|чай|латте|капучино/,'☕'],[/пиво|вино|алкогол|бар\b|коктейл/,'🍺'],[/сладост|шоколад|десерт|торт|конфет|мороженое/,'🍰'],[/кафе|ресторан|обед|ужин|завтрак|пицц|суши|бургер|шаурм|фастфуд|еда вне|доставка еды/,'🍽️'],
  [/хлеб|выпечк|булоч/,'🥖'],[/мясо|колбас/,'🥩'],[/рыба|рыбал/,'🎣'],[/молок|сыр|яйц/,'🥛'],[/продукт|магазин|супермаркет|овощ|фрукт|рынок|базар/,'🛒'],
@@ -981,6 +1010,7 @@ const _obj=v=>v&&typeof v==='object'&&!Array.isArray(v),_okArr=(a,f)=>Array.isAr
 let tx=_okArr(S.get('finapp.tx',[]),t=>_obj(t)),_cs=S.get('finapp.settings',{}),cfg={cur:'MDL',budget:0,auto:false,rates:{},custom:[],catOv:{},...(_obj(_cs)?_cs:{})},learn=S.get('finapp.learn',{});
 if(IN_TG&&!cfg.theme)cfg.theme='auto';if(!_obj(learn))learn={};if(typeof cfg.cur!=='string'||!cfg.cur)cfg.cur='MDL';if(!(Number(cfg.budget)>=0))cfg.budget=0;
 if(!_obj(cfg.rates))cfg.rates={};if(!_obj(cfg.catOv))cfg.catOv={};
+if(!_obj(cfg.bm))cfg.bm={};if(!_obj(cfg.rman))cfg.rman={};Object.keys(cfg.bm).forEach(k=>{if(!/^\d{4}-\d{2}$/.test(k)||!(Number(cfg.bm[k])>0))delete cfg.bm[k]});delete cfg.notified;
 ['custom','goals','debts','rec'].forEach(k=>{if(cfg[k]!==undefined)cfg[k]=_okArr(cfg[k])});
 if(Array.isArray(cfg.cc))cfg.cc=cfg.cc.filter(x=>typeof x==='string');
 tx.forEach(t=>{t.amount=Number.isFinite(+t.amount)?Math.abs(+t.amount):0;if(typeof t.date!=='string'||!/^\d{4}-\d{2}-\d{2}/.test(t.date))t.date=ymd(new Date());else t.date=t.date.slice(0,10);
@@ -1003,6 +1033,14 @@ let month=mk(new Date()),tab='list',drafts=[],undoIds=null,KD='expense',RG='mont
 function mk(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
 function ymd(d){return mk(d)+'-'+String(d.getDate()).padStart(2,'0')}
 const save=()=>{snapTx(true);S.set('finapp.tx',tx);S.set('finapp.settings',cfg);S.set('finapp.learn',learn);cloudTouch()};
+// бюджет по месяцам: cfg.bm = {'2026-10': 20000}; месяц без своего бюджета берёт общий (cfg.budget)
+const bmOwn=m=>!!(cfg.bm&&Number(cfg.bm[m])>0);
+const budgetOf=m=>bmOwn(m)?Number(cfg.bm[m]):(Number(cfg.budget)||0);
+// долги и взносы в цели → настоящие расходы (видны бюджету, прогнозу, лимитам); включается галочкой «Записать как расход»
+const linkOn=()=>cfg.link!==false;
+function addLinkedExpense(kind,amount,note){amount=Math.round((Number(amount)||0)*100)/100;if(!(amount>0))return null;
+  const t={id:uid(),type:'expense',amount,category:kind==='goal'?'save':'debt',note:String(note||'').slice(0,80),date:ymd(new Date())};
+  tx=[t,...tx];return t}
 
 // переход на новый список категорий (один раз): старые операции, лимиты и повторы переезжают в новые категории
 if(cfg.catV!==2){
@@ -1039,6 +1077,7 @@ function detect(piece,note,type){
   for(const c of ALL){if(INC.has(c.id)!==(type==='income'))continue;for(const k of c.k)if(kwHit(t,k)){const w=k.length+(c.uw&&c.uw.includes(k)?50:0)+(c.strong&&c.strong.has(k)?50:0);if(w>bl||(w===bl&&c.custom)){best=c.id;bl=w}}}
   return best}
 
+
 // Разбор: несколько операций в одной фразе → несколько записей
 const CURS={
  MDL:{n:'Молдавский лей',w:'лей|леев|лея|леи|мдл'},RUB:{n:'Российский рубль',w:'руб\\S*|₽|рэ'},USD:{n:'Доллар США',w:'долл\\S*|долар\\S*|\\$|бакс\\S*'},EUR:{n:'Евро',w:'евро|€|еврик\\S*'},
@@ -1059,6 +1098,7 @@ const _cre={};
 const curOf=w=>{if(!w)return null;w=String(w).toLowerCase().trim();for(const k of codes()){const src=curSrc(k),re=_cre[src]||(_cre[src]=new RegExp('^(?:'+src+')$'));if(re.test(w))return k}return null};
 // записать курс (1 единица валюты c в основной валюте) и пересчитать черновики
 let lastRateN=0,cadOpen=false;
+const needRate=new Set();
 // Курс фиксируется в операции в момент записи (поле rt): смена курса не трогает прошлое.
 // Пересчитываются только черновики и операции, у которых суммы ещё нет (курс не был задан); all=true — пересчитать всё по явной просьбе.
 function setRate(c,v,all){v=parseFloat(String(v).replace(/\s/g,'').replace(',','.'))||0;cfg.rates[c]=v;needRate.delete(c);lastRateN=0;
@@ -1123,6 +1163,7 @@ function parse(raw){
   if(pendT.length){const pt=[...new Set(pendT.map(normTag).filter(Boolean))];out.forEach(o=>o.tags=[...new Set([...(o.tags||[]),...pt])].slice(0,8))}
   return out}
 
+
 // ---------- команды в общей строке: бюджет, лимит, цели, долги ----------
 function goalDeposit(g,a,sg){const was=g.saved;g.saved=Math.max(0,Math.round((g.saved+sg*a)*100)/100);g.log=(g.log||[]).concat({d:ymd(new Date()),a:Math.round((g.saved-was)*100)/100}).slice(-200);return Math.round(Math.abs(g.saved-was)*100)/100}
 function voiceCmds(raw){
@@ -1135,15 +1176,21 @@ function voiceCmds(raw){
   const findGoal=ws=>(cfg.goals||[]).find(g=>{const gw=words(g.name);return ws.length&&ws.every(w=>gw.some(x=>stemEq(w,x)))});
   const B='(?:^|[\\s,;.])';
   const dep=(m,a,ws)=>{const g=findGoal(ws);if(!g)return false;const v=val(m,a);if(!(v>0))return false;
-    const real=goalDeposit(g,v,1);msgs.push('В цель «'+g.name+'»: +'+fmt(real||v)+(g.saved>=g.target?' 🎉':''));return true};
+    const real=goalDeposit(g,v,1),lk=linkOn()&&addLinkedExpense('goal',real||v,'Взнос в цель «'+g.name+'»');msgs.push('В цель «'+g.name+'»: +'+fmt(real||v)+(g.saved>=g.target?' 🎉':'')+(lk?' · расход':''));return true};
   const take=(re,fn)=>{let m,guard=0;while(guard++<6&&(m=re.exec(t))){if(fn(m)){t=t.replace(m[0],' ');re.lastIndex=0}else{re.lastIndex=m.index+1}}};
-  // бюджет
+  // бюджет на конкретный месяц: «бюджет на ноябрь 25000», «бюджет ноябрь 25 000», «бюджет на этот месяц 25000»
+  const MI_={янв:1,фев:2,мар:3,апр:4,мая:5,май:5,июн:6,июл:7,авг:8,сен:9,окт:10,ноя:11,дек:12},BV='(?:(?:установи\\S*|поставь\\S*|задай\\S*|сделай\\S*|измени\\S*|новый|мой)\\s+)?бюджет\\s+(?:на\\s+)?';
+  const setBm=(key,v)=>{if(!(v>0))return false;if(!_obj(cfg.bm))cfg.bm={};cfg.bm[key]=v;const mi=+key.slice(5,7);msgs.push('Бюджет · '+MN[mi-1]+': '+fmt(v)+' '+cfg.cur);return true};
+  take(new RegExp(B+BV+'(янв|фев|мар|апр|мая|май|июн|июл|авг|сен|окт|ноя|дек)[а-я]*\\s*(?:на\\s+|в размере\\s+|=|-|—|:)?\\s*'+AMT,'g'),
+    m=>setBm(month.slice(0,4)+'-'+String(MI_[m[1]]).padStart(2,'0'),val(m,2)));
+  take(new RegExp(B+BV+'(?:этот|текущий)\\s+месяц\\s*(?:на\\s+|=|-|—|:)?\\s*'+AMT,'g'),m=>setBm(month,val(m,1)));
+  // общий бюджет (для всех месяцев без своего)
   take(new RegExp(B+'(?:(?:установи\\S*|поставь\\S*|задай\\S*|сделай\\S*|измени\\S*|новый|мой)\\s+)?бюджет(?:\\s+(?:на\\s+)?(?:месяц|мес\\S*))?\\s*(?:на\\s+|в размере\\s+|=|-|—|:)?\\s*'+AMT,'g'),
-    m=>{const v=val(m,1);if(!(v>0))return false;cfg.budget=v;msgs.push('Бюджет: '+fmt(v)+' '+cfg.cur);return true});
+    m=>{const v=val(m,1);if(!(v>0))return false;cfg.budget=v;if(_obj(cfg.bm))delete cfg.bm[month];msgs.push('Бюджет: '+fmt(v)+' '+cfg.cur);return true});
   // курс в строке: «курс евро 19.5», «1 евро = 19,5», «курс доллара = 17.8 лей» → записать курс (прошлые операции сохраняют свой курс)
   {const CW=curWords(),NUM='(\\d+(?:[.,]\\d+)?)',BW='(?:\\s*(?:'+curSrc(cfg.cur)+')(?=\\s|$))?';
    const setR=(w,n)=>{const cc=curOf(w);if(!cc||cc===cfg.cur)return false;const v=parseFloat(String(n).replace(',','.'));if(!(v>0))return false;
-     setRate(cc,v);if(!cfg.curList.includes(cc))cfg.curList.push(cc);save();
+     setRate(cc,v);(cfg.rman||(cfg.rman={}))[cc]=1;if(!cfg.curList.includes(cc))cfg.curList.push(cc);save();
      msgs.push('Курс: 1 '+cc+' = '+fmt(v)+' '+cfg.cur+(lastRateN?' · посчитано операций без курса: '+lastRateN:''));return true};
    take(new RegExp(B+'курс\\S*\\s+(?:1\\s*)?('+CW+')(?=\\s|$|[=:—-])\\s*(?:=|:|—|-|равен|равна)?\\s*'+NUM+BW,'g'),m=>setR(m[1],m[2]));
    take(new RegExp(B+'1\\s*('+CW+')\\s*(?:=|:|—|-)\\s*'+NUM+BW,'g'),m=>setR(m[1],m[2]))}
@@ -1155,13 +1202,15 @@ function voiceCmds(raw){
   const DR=x=>Math.max(0,x.amount-x.paid),RB='(?:[а-яa-z-]+)';
   const findDebt=ws=>(cfg.debts||[]).find(d=>DR(d)>0&&ws.length&&ws.every(w=>words(d.who).some(x=>stemEq(w,x))));
   const payDebt=(m,a,ws)=>{const d=findDebt(ws);if(!d)return false;const v=val(m,a);if(!(v>0))return false;
-    const add=Math.min(v,DR(d));d.paid=Math.min(d.amount,d.paid+v);d.log=(d.log||[]).concat({d:ymd(new Date()),a:add}).slice(-200);
-    msgs.push('Долг «'+d.who+'»: '+(d.dir==='in'?'вернули ':'вы вернули ')+fmt(add)+(DR(d)<=0?' · закрыт ✓':' · осталось '+fmt(Math.round(DR(d)*100)/100)));return true};
+    const add=Math.min(v,DR(d));d.paid=Math.min(d.amount,d.paid+v);d.log=(d.log||[]).concat({d:ymd(new Date()),a:add}).slice(-200);if(DR(d)<=0&&!d.closed)d.closed=ymd(new Date());
+    const lk=d.dir==='out'&&linkOn()&&addLinkedExpense('debt',add,'Возврат долга: '+d.who);
+    msgs.push('Долг «'+d.who+'»: '+(d.dir==='in'?'вернули ':'вы вернули ')+fmt(add)+(DR(d)<=0?' · закрыт ✓':' · осталось '+fmt(Math.round(DR(d)*100)/100))+(lk?' · расход':''));return true};
   const nom=w=>w.length>4&&/[бвгджзклмнпрстфхцчшщ][ау]$/.test(w)?w.slice(0,-1):w;
   const mkDebt=(name,v,dir)=>{name=name.trim().replace(/^(у|для|перед)\s+/,'');if(!name||!(v>0))return false;
     const nm=name.split(/\s+/).map(nom).map(cap).join(' ').slice(0,40),ex=(cfg.debts||[]).find(d=>DR(d)>0&&d.dir===dir&&words(d.who).length===words(nm).length&&words(nm).every(w=>words(d.who).some(x=>stemEq(w,x))));
     if(ex)ex.amount=Math.round((ex.amount+v)*100)/100;else cfg.debts.push({id:uid(),who:nm,dir,amount:v,paid:0,due:'',created:ymd(new Date()),log:[]});
-    msgs.push(dir==='in'?'Долг: '+nm+' должен вам '+fmt(ex?ex.amount:v):'Долг: вы должны '+nm+' '+fmt(ex?ex.amount:v));return true};
+    const lk=dir==='in'&&linkOn()&&addLinkedExpense('debt',v,'Долг: выдал '+nm);
+    msgs.push((dir==='in'?'Долг: '+nm+' должен вам '+fmt(ex?ex.amount:v):'Долг: вы должны '+nm+' '+fmt(ex?ex.amount:v))+(lk?' · расход':''));return true};
   for(const n of [2,1]){const NM=Array(n).fill(W).join('\\s+');
     take(new RegExp(B+'(?:вернул[аи]?|отдал[аи]?|погасил[аи]?|выплатил[аи]?|вернули|отдали)\\s+(?:долг\\s+)?(?:(?:ему|ей|у)\\s+)?('+NM+')\\s+(?:на\\s+)?'+AMT,'g'),m=>payDebt(m,2,words(m[1])));
     take(new RegExp(B+'(?:вернул[аи]?|отдал[аи]?|погасил[аи]?|выплатил[аи]?)\\s+'+AMT+'\\s+(?:долга?\\s+)?('+NM+')(?![а-яa-z-])','g'),m=>payDebt(m,1,words(m[4])));
@@ -1198,6 +1247,83 @@ function voiceCmds(raw){
   take(new RegExp(B+'(?:нов\\S*\\s+цел\\S*|цел[ьию]|накопи\\S*|копи(?:ть)?)\\s+'+AMT+'\\s+(?:на\\s+|для\\s+)?('+W+'(?:\\s+'+W+'(?![а-яa-z-])(?!\\s+\\d))?)','g'),m=>mkGoal(m[4],val(m,1)));
   return{rest:t.replace(/\s+/g,' ').trim(),msgs}}
 
+
+// ---------- голосовой ввод ----------
+// Один диспетчер на строку ввода и на поиск. Главное правило: на КАЖДЫЙ сеанс создаётся НОВЫЙ распознаватель,
+// а старый полностью отпускается. Раньше один экземпляр запускался повторно (rec.start() после onend): на телефонах
+// это молча ничего не делает — отсюда «после одной фразы или выключения микрофон больше не пишет».
+// Дополнительно: пауза между сеансами, сторож «запуск завис», один автоповтор после тихого сбоя, честные сообщения.
+const Voice=(()=>{
+  const SRc=()=>window.SpeechRecognition||window.webkitSpeechRecognition;
+  const GAP=350,START_WAIT=15000,MAX_LISTEN=30000;   // START_WAIT велик: пока пользователь отвечает на запрос разрешения, onstart не приходит
+  let rec=null,sid=0,cur=null,queued=null,state='idle',t0=0,finals='',interim='',err='',tries=0,wantStop=false,endedAt=0;
+  let tStop=0,tMax=0,tStart=0,tBegin=0,tRetry=0,tErr=0;
+  const say=(o,s)=>{try{o&&o.onState&&o.onState(s)}catch{}};
+  const text=()=>(finals+' '+interim).replace(/\s+/g,' ').trim();
+  const clearT=()=>{clearTimeout(tStop);clearTimeout(tMax);clearTimeout(tStart);clearTimeout(tErr)};
+  // полностью отпустить распознаватель: снять обработчики (поздние события не тронут новый сеанс) и прервать
+  function drop(r){if(!r)return;r.onstart=r.onresult=r.onerror=r.onend=null;try{r.abort()}catch{}}
+  function make(my){
+    const C=SRc(),r=new C();r.lang='ru-RU';r.interimResults=true;r.continuous=false;r.maxAlternatives=1;
+    const live=()=>my===sid&&r===rec;
+    r.onstart=()=>{if(!live())return;clearTimeout(tStart);if(state==='starting'){state='listening';say(cur,'listening')}clearTimeout(tMax);tMax=setTimeout(stop,MAX_LISTEN)};
+    r.onresult=e=>{if(!live()||!cur)return;let f='',i='';
+      for(let k=0;k<e.results.length;k++){const x=e.results[k];if(x.isFinal)f+=' '+x[0].transcript;else i+=' '+x[0].transcript}
+      finals=f;interim=i;try{cur.onText&&cur.onText(text())}catch{}};
+    r.onerror=e=>{if(!live())return;err=(e&&e.error)||'error';
+      // в некоторых браузерах после ошибки «конец» не приходит — подстраховываемся
+      clearTimeout(tErr);tErr=setTimeout(()=>{if(live()&&state!=='idle'&&state!=='retry')finish()},1200)};
+    r.onend=()=>{if(live())finish()};
+    return r}
+  function begin(){
+    finals='';interim='';err='';wantStop=false;t0=Date.now();state='starting';say(cur,'starting');
+    clearTimeout(tBegin);tBegin=setTimeout(launch,Math.max(0,GAP-(Date.now()-endedAt)))}
+  function launch(){
+    if(state!=='starting')return;
+    drop(rec);rec=null;const my=++sid;
+    try{rec=make(my);rec.start()}
+    catch(e){drop(rec);rec=null;state='idle';const c=cur;cur=null;endedAt=Date.now();say(c,'idle');toast('Не удалось включить микрофон. Закройте и откройте приложение заново');return}
+    clearTimeout(tStart);tStart=setTimeout(()=>{if(state==='starting'&&my===sid){err='start-timeout';finish()}},START_WAIT)}
+  function denied(){
+    toast(IN_TG?'Нет доступа к микрофону. Разрешите его для Telegram в настройках телефона'
+      :'Нет доступа к микрофону. Разрешите его для этого сайта (значок замка в адресной строке)')}
+  function finish(){
+    if(state==='idle'||state==='retry')return;
+    clearT();clearTimeout(tBegin);
+    const c=cur,e=err,txt=text(),quick=Date.now()-t0<2500;
+    drop(rec);rec=null;endedAt=Date.now();
+    // тихий сбой (нет ни слов, ни понятной ошибки) — один раз пробуем снова на новом распознавателе
+    if(!txt&&!wantStop&&tries<1&&(e==='start-timeout'||(quick&&(!e||e==='no-speech'||e==='aborted')))){
+      tries++;state='retry';clearTimeout(tRetry);tRetry=setTimeout(()=>{if(cur===c&&state==='retry')begin()},400);return}
+    state='idle';cur=null;say(c,'idle');
+    if(e==='not-allowed'||e==='service-not-allowed')denied();
+    else if(e==='network')toast('Нет интернета — распознавание речи работает онлайн');
+    else if(e==='audio-capture')toast('Микрофон недоступен — возможно, его занимает другое приложение');
+    else if(e==='start-timeout')toast('Микрофон не отвечает — нажмите ещё раз');
+    else if(!txt&&!wantStop)toast('Не расслышал — нажмите на микрофон и скажите ещё раз');
+    try{c&&c.onDone&&c.onDone(txt,e)}catch{}
+    if(queued){const q=queued;queued=null;setTimeout(()=>toggle(q),200)}}
+  function stop(){
+    if(state==='starting'||state==='listening'){
+      state='stopping';wantStop=true;clearTimeout(tBegin);
+      const r=rec;if(!r){finish();return}             // сеанс ещё не запущен (идёт пауза между сеансами)
+      try{r.stop()}catch{try{r.abort()}catch{}}
+      clearTimeout(tStop);tStop=setTimeout(()=>{if(state==='stopping')finish()},2200)}}
+  function toggle(o){
+    if(!SRc()){toast('Голосовой ввод не поддерживается в этом браузере');return}
+    if(state==='retry'){clearTimeout(tRetry);const c=cur;state='idle';cur=null;say(c,'idle');if(c===o)return}
+    if(state==='starting'||state==='listening'){if(cur!==o)queued=o;stop();return}
+    if(state==='stopping'){queued=o;return}
+    cur=o;tries=0;begin()}
+  // свернули приложение — отпускаем микрофон (иначе на телефонах распознавание «залипает»)
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){queued=null;stop()}});
+  window.addEventListener('pagehide',()=>{queued=null;stop()});
+  return{toggle,
+    busy:()=>state!=='idle',
+    isFor:o=>cur===o&&state!=='idle',
+    stopFor:o=>{if(!o||cur!==o)return;queued=null;if(state==='retry'){clearTimeout(tRetry);state='idle';cur=null;say(o,'idle')}else stop()}}
+})();
+
 // ---------- ввод ----------
 const inp=$('#inp'),mic=$('#mic');
 // команда «сохрани в Excel / JSON / резервную копию» в строке ввода (текстом или голосом)
@@ -1213,7 +1339,7 @@ function run(){
   inp.value='';syncBtn();
   if(cm.msgs.length){save();render();toast(cm.msgs.join(' · '))}
   if(!r.length){if(!drafts.length&&sh.classList.contains('on')&&typeof closeSheet==='function')closeSheet();return}
-  if(needRate.size)toast('Укажите курс '+[...needRate].join(', ')+' в строке записи — сумма пока 0');
+  if(needRate.size)needRateFlow();
   drafts.push(...r);renderRev();if(cfg.auto&&!needRate.size){if(!sh.classList.contains('on'))openSheet();startAuto();syncBtn()}}
 function commit(list,withUndo){
   tx=[...list,...tx];save();
@@ -1222,70 +1348,6 @@ function commit(list,withUndo){
 $('#go').onclick=()=>{if(inp.value.trim())run();else if(drafts.length)commitDrafts();else inp.focus()};inp.onkeydown=e=>{if(e.key==='Enter'){if(inp.value.trim())run();else if(drafts.length)commitDrafts()}};
 const IDLE='Введите: траты, лимиты, цели, бюджет, долги',setHint=t=>{inp.placeholder=t};
 let ignore=false;
-// ---------- голосовой ввод ----------
-// Один общий распознаватель на строку ввода и на поиск: не создаётся заново на каждое нажатие,
-// не падает молча при быстрых повторных нажатиях, сам перезапускается после тихого сбоя
-// и честно говорит, что пошло не так.
-const Voice=(()=>{
-  const SRc=window.SpeechRecognition||window.webkitSpeechRecognition;
-  let rec=null,cur=null,queued=null,state='idle',t0=0,finals='',interim='',err='',tries=0,wantStop=false,tStop=0,tMax=0,tRetry=0;
-  const say=(o,s)=>{try{o&&o.onState&&o.onState(s)}catch{}};
-  const text=()=>(finals+' '+interim).replace(/\s+/g,' ').trim();
-  function make(){
-    const r=new SRc();r.lang='ru-RU';r.interimResults=true;r.continuous=false;r.maxAlternatives=1;
-    r.onstart=()=>{if(r!==rec)return;if(state==='starting'){state='listening';say(cur,'listening')}clearTimeout(tMax);tMax=setTimeout(stop,30000)};
-    r.onresult=e=>{if(r!==rec||!cur)return;let f='',i='';
-      for(let k=0;k<e.results.length;k++){const x=e.results[k];if(x.isFinal)f+=' '+x[0].transcript;else i+=' '+x[0].transcript}
-      finals=f;interim=i;try{cur.onText&&cur.onText(text())}catch{}};
-    r.onerror=e=>{if(r!==rec)return;err=(e&&e.error)||'error';
-      // в некоторых браузерах после ошибки «конец» не приходит — подстраховываемся
-      setTimeout(()=>{if(r===rec&&state!=='idle'&&state!=='retry')finish()},1500)};
-    r.onend=()=>{if(r!==rec)return;finish()};
-    return r}
-  function begin(){
-    finals='';interim='';err='';wantStop=false;t0=Date.now();state='starting';say(cur,'starting');
-    try{if(!rec)rec=make();rec.start()}
-    catch(e){
-      // прошлая сессия ещё закрывается или распознаватель завис — создаём новый
-      const old=rec;rec=null;try{old&&old.abort()}catch{}
-      try{rec=make();rec.start()}
-      catch(e2){rec=null;state='idle';const c=cur;cur=null;say(c,'idle');toast('Не удалось включить микрофон. Закройте и откройте приложение заново');return}}}
-  function denied(){
-    toast(IN_TG?'Нет доступа к микрофону. Разрешите его для Telegram в настройках телефона'
-      :'Нет доступа к микрофону. Разрешите его для этого сайта (значок замка в адресной строке)')}
-  function finish(){
-    if(state==='idle'||state==='retry')return;
-    clearTimeout(tStop);clearTimeout(tMax);
-    const c=cur,e=err,txt=text(),quick=Date.now()-t0<2000;
-    // тихий сбой сразу после старта — главная причина «работает через раз»: один раз пробуем снова
-    if(!txt&&!wantStop&&tries<1&&quick&&(!e||e==='no-speech'||e==='aborted')){
-      tries++;state='retry';clearTimeout(tRetry);tRetry=setTimeout(()=>{if(cur===c&&state==='retry')begin()},350);return}
-    state='idle';cur=null;say(c,'idle');
-    if(e==='not-allowed'||e==='service-not-allowed')denied();
-    else if(e==='network')toast('Нет интернета — распознавание речи работает онлайн');
-    else if(e==='audio-capture')toast('Микрофон недоступен — возможно, его занимает другое приложение');
-    else if(!txt&&!wantStop)toast('Не расслышал — нажмите на микрофон и скажите ещё раз');
-    try{c&&c.onDone&&c.onDone(txt,e)}catch{}
-    if(queued){const q=queued;queued=null;setTimeout(()=>toggle(q),200)}}
-  function stop(){
-    if(state==='starting'||state==='listening'){
-      state='stopping';wantStop=true;
-      try{rec.stop()}catch{try{rec.abort()}catch{}}
-      clearTimeout(tStop);tStop=setTimeout(()=>{if(state==='stopping')finish()},2200)}}
-  function toggle(o){
-    if(!SRc){toast('Голосовой ввод не поддерживается в этом браузере');return}
-    if(state==='retry'){clearTimeout(tRetry);const c=cur;state='idle';cur=null;say(c,'idle');if(c===o)return}
-    if(state==='starting'||state==='listening'){if(cur!==o)queued=o;stop();return}
-    if(state==='stopping'){queued=o;return}
-    cur=o;tries=0;begin()}
-  // свернули приложение — отпускаем микрофон (иначе на телефонах распознавание «залипает»)
-  document.addEventListener('visibilitychange',()=>{if(document.hidden){queued=null;stop()}});
-  window.addEventListener('pagehide',()=>{queued=null;stop()});
-  return{toggle,
-    busy:()=>state!=='idle',
-    isFor:o=>cur===o&&state!=='idle',
-    stopFor:o=>{if(!o||cur!==o)return;queued=null;if(state==='retry'){clearTimeout(tRetry);state='idle';cur=null;say(o,'idle')}else stop()}}
-})();
 var micMain={
   onState(s){const on=s==='starting'||s==='listening';mic.classList.toggle('on',on);mic.setAttribute('aria-pressed',on);
     setHint(s==='listening'?'Слушаю…':s==='starting'?'Включаю микрофон…':IDLE)},
@@ -1332,8 +1394,9 @@ ov.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault()});
 ov.addEventListener('touchmove',e=>{e.preventDefault()},{passive:false});
 ov.onclick=()=>{if($('#nc').classList.contains('on'))closeNc(false);else if(rcS)closeRc();else if(bqT)closeBq();else if(cpS)closeCp();else if(cfT)closeCf();else if(gT)closeGoal();else if(eT)closeEdit();else if(sh.classList.contains('on')){inp.value='';closeSheet()}else{ov.className='';lockBg(false)}};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#nc').classList.contains('on'))closeNc(false);else if(rcS)closeRc();else if(bqT)closeBq();else if(cpS)closeCp();else if(cfT)closeCf();else if(gT)closeGoal();else if(eT)closeEdit();else if(sh.classList.contains('on')){inp.value='';closeSheet()}}});
-document.addEventListener('touchmove',e=>{if(isModalOpen()&&!e.target.closest('#sh,#ed,#gd,#cf,#bq,#nc,#cp,#rc,#rev'))e.preventDefault()},{passive:false});
-document.addEventListener('pointerdown',e=>{if(isModalOpen()&&!e.target.closest('#sh,#ed,#gd,#cf,#bq,#nc,#cp,#rc,#ov,#toast,#tour')){e.stopPropagation();e.preventDefault()}},true);
+document.addEventListener('touchmove',e=>{if(isModalOpen()&&!e.target.closest('#sh,#ed,#gd,#cf,#bq,#nc,#cp,#rc,#rev,#lk'))e.preventDefault()},{passive:false});
+document.addEventListener('pointerdown',e=>{if(isModalOpen()&&!e.target.closest('#sh,#ed,#gd,#cf,#bq,#nc,#cp,#rc,#ov,#toast,#tour,#lk')){e.stopPropagation();e.preventDefault()}},true);
+
 
 // ---------- строки ----------
 function opts(type,sel){return ALL.filter(c=>c.inc===(type==='income')).map(c=>`<option value="${c.id}"${c.id===sel?' selected':''}>${E(c.l)}</option>`).join('')}
@@ -1425,7 +1488,7 @@ function bind(root,list,isDraft){
 bind($('#rev'),()=>drafts,true);bind($('#body'),()=>tx,false);
 
 // ---------- основной экран ----------
-let q='',fcat=null,ftag=null,fday=null,ftagR=null,ftagBk='goals',AS='all',ps='goals',TR='all',tipsOpen=false,WO=0,_wm=null,lastRange={from:'',to:''},openRow=null,needRate=new Set(),newType='expense';
+let q='',fcat=null,ftag=null,fday=null,ftagR=null,ftagBk='goals',AS='all',ps='goals',TR='all',tipsOpen=false,WO=0,_wm=null,lastRange={from:'',to:''},openRow=null,newType='expense';
 function weeksOf(m){const [y,mo]=m.split('-').map(Number),n=new Date(y,mo,0).getDate(),p=x=>String(x).padStart(2,'0'),out=[];let a=1;
   while(a<=n){const wd=(new Date(y,mo-1,a).getDay()+6)%7,b=Math.min(n,a+(6-wd));out.push({from:m+'-'+p(a),to:m+'-'+p(b)});a=b+1}return out}
 function woFor(m){const W=weeksOf(m),td=ymd(new Date()),i=W.findIndex(w=>td>=w.from&&td<=w.to);return i>=0?i:0}
@@ -1433,6 +1496,7 @@ const MS=['янв','фев','мар','апр','мая','июн','июл','авг
 const prevM=m=>{const[y,mo]=m.split('-').map(Number);return mk(new Date(y,mo-2,1))};
 const sumBy=(m,type,cat)=>tx.filter(t=>t.type===type&&t.date.startsWith(m)&&(!cat||t.category===cat)).reduce((s,t)=>s+t.amount,0);
 const sgn=d=>(d>=0?'+':'−')+Math.abs(Math.round(d))+'%';
+
 
 // ================= лимиты, прогноз, сравнение, шаблоны, цели =================
 const MND=['январю','февралю','марту','апрелю','маю','июню','июлю','августу','сентябрю','октябрю','ноябрю','декабрю'],MSH=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
@@ -1446,7 +1510,7 @@ function cmpCat(type,id){const b=cmpBase(),cur=sumTo(month,type,id,b.upTo),prev=
 // прогноз конца месяца (только для текущего месяца)
 function forecast(){const now=new Date();if(month!==mk(now))return null;
   const d=now.getDate(),y=now.getFullYear(),mo=now.getMonth(),N=daysIn(y,mo),X=sumBy(month,'expense'),I=sumBy(month,'income');
-  const Bd=cfg.budget||0;
+  const Bd=budgetOf(month);
   if(Bd>0){const left=N-d+1,avail=Bd-X,pace=X/d,proj=pace*N,dn=n=>{const a=n%100,b=n%10;return n+' '+(a>10&&a<15?'дней':b===1?'день':b>=2&&b<=4?'дня':'дней')};
     if(avail<=0)return{lines:[`Бюджет ${fmt(Bd)} ${cfg.cur} исчерпан — превышен на ${fmt(Math.round(-avail))} ${cfg.cur}.`],short:`Бюджет исчерпан: превышен на ${fmt(Math.round(-avail))} ${cfg.cur}`,sub:'',warn:true,proj};
     const al=Math.floor(avail/left),warn=X>0&&pace>al,lines=[`По бюджету ${fmt(Bd)} ${cfg.cur}: осталось ${fmt(Math.round(avail))} на ${dn(left)} — можно тратить до ${fmt(al)} ${cfg.cur} в день.`];
@@ -1454,8 +1518,8 @@ function forecast(){const now=new Date();if(month!==mk(now))return null;
     return{lines,short:`По бюджету: до ${fmt(al)} ${cfg.cur} в день`,sub:`Осталось ${fmt(Math.round(avail))} из ${fmt(Bd)} · ${dn(left)} до конца месяца`+(warn?` · сейчас ${fmt(Math.round(pace))} в день`:''),warn,proj}}
   if(!(X>0))return null;
   const pace=X/d,proj=pace*N,t0=new Date(y,mo,d),hz=new Date(y,mo+1,1),label='до конца месяца';
-  const left=Math.max(1,Math.round((hz-t0)/864e5)),avail=I>0?I-X:(cfg.budget>0?cfg.budget-X:null),what=I>0?'остатка':'бюджета';
-  const lines=[`К концу месяца при таком темпе: ≈ ${fmt(Math.round(proj))} ${cfg.cur}`+(cfg.budget>0?` (бюджет ${fmt(cfg.budget)})`:'')+'.'];let short='',warn=false;
+  const left=Math.max(1,Math.round((hz-t0)/864e5)),avail=I>0?I-X:(Bd>0?Bd-X:null),what=I>0?'остатка':'бюджета';
+  const lines=[`К концу месяца при таком темпе: ≈ ${fmt(Math.round(proj))} ${cfg.cur}`+(Bd>0?` (бюджет ${fmt(Bd)})`:'')+'.'];let short='',warn=false;
   if(avail==null){short='Прогноз месяца ≈ '+fmt(Math.round(proj))+' '+cfg.cur}
   else if(avail<=0){warn=true;lines.push(I>0?'Расходы месяца уже превысили доходы — остатка нет.':'Бюджет месяца исчерпан.');short=I>0?'Остатка нет':'Бюджет исчерпан'}
   else{const al=Math.floor(avail/left);
@@ -1547,7 +1611,7 @@ function trendHtml(peek){
   let h=`<div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px"><div class="tlg"><span><i style="background:var(--g)"></i>Доходы</span><span><i style="background:var(--rd)"></i>Расходы</span></div>${seg('tn',[['6','6 мес'],['12','12 мес']],String(TN))}</div><div class="cd" style="padding:10px 8px 8px">${s}<div class="gx" style="margin:2px 6px 2px">В среднем за месяц: доход ${fmt(Math.round(aI))} · расход ${fmt(Math.round(aX))} ${cfg.cur}</div></div>`;
   h+=`<div class="cd"><h4>Итоги · ${mn}</h4>`;
   if(!st.ex.length&&!st.I)return h+`<div class="gx">В этом месяце операций нет.</div></div>`;
-  const sv=st.I>0?st.I-st.X:(cfg.budget>0?cfg.budget-st.X:null),svl=st.I>0?'Сэкономили':'Сэкономили от бюджета';
+  const sv=st.I>0?st.I-st.X:(budgetOf(sel)>0?budgetOf(sel)-st.X:null),svl=st.I>0?'Сэкономили':'Сэкономили от бюджета';
   const tile=(a,b2,c,col)=>`<div class="stt"><small>${a}</small><b${col?` style="color:${col}"`:''}>${b2}</b><span>${c||'&nbsp;'}</span></div>`;
   h+=`<div class="stg">`+
    tile('Расходы',fmt(Math.round(st.X))+' '+cfg.cur,st.dlt==null?'':E(sgn(st.dlt)+' к прошлому месяцу'),null)+
@@ -1581,6 +1645,7 @@ function calHtml(an){const [ccl,cst]=calAn(an,month);const [y,mo]=month.split('-
   if(dl.length)h+=`<div class="cd" style="padding:2px 14px"><h4 style="margin-top:10px">Сроки по долгам</h4>`+dl.map(d=>`<div class="pl" data-go="debts" role="button" tabindex="0"><span class="pc" style="background:#f2c14e;color:#111">${+d.due.slice(8,10)}</span><span>${E(d.who)} · ${d.dir==='in'?'вернут':'вернуть'}</span><span>${fmt(Math.round(dRem(d)))}</span></div>`).join('')+`</div>`;
   return h+`<div class="hint">Нажмите на день — откроются его операции.${Object.keys(due).length?' Жёлтая точка — срок по долгу.':''}</div>`}
 const openDay=d=>{if(isModalOpen())return;fday=d;fcat=null;ftag=null;tab='list';render();window.scrollTo(0,0)};
+
 // ---- долги ----
 const dRem=d=>Math.max(0,d.amount-d.paid);
 const dueRel=due=>Math.round((new Date(due+'T00:00:00')-new Date(ymd(new Date())+'T00:00:00'))/864e5);
@@ -1622,21 +1687,27 @@ function openDebt(d,src){if(isModalOpen())return;cancelGestures();lockBg(true);g
 <label class="ef">Сумма<input id="dam" inputmode="decimal" value="${v.amount||''}" placeholder="500"></label>
 <label class="ef">Уже возвращено<input id="dpd" inputmode="decimal" value="${v.paid||''}" placeholder="0"></label>
 <label class="ef">Вернуть до<input id="ddu" type="date" value="${E(v.due||'')}"></label>
-<div class="shf">${d?'<button class="sm del" id="gdel">Удалить</button>':'<span></span>'}<button class="sm pr" id="gsvb">Сохранить</button></div>`;showGd(src);
+${d?'':`<label class="lnk" id="dlnkw"><input type="checkbox" id="dlnk"${linkOn()?' checked':''}>Записать как расход (деньги ушли из кармана)</label>`}
+<div class="shf">${d?'<button class="sm del" id="gdel">Удалить</button>':'<span></span>'}<button class="sm pr" id="gsvb">Сохранить</button></div>`;showGd(src);lnkSync();
   if(!d)setTimeout(()=>{const a=$('#dwh');if(a)a.focus({preventScroll:true})},60)}
 function openDpay(d,src){if(isModalOpen())return;cancelGestures();lockBg(true);gT={mode:'dpay',id:d.id};
   gd.innerHTML=`<div class="eh"><b>${d.dir==='in'?'Получено':'Возвращено'}</b><button class="x" id="gcl" aria-label="Закрыть" style="font-size:20px;padding:4px 6px">×</button></div>
 <input id="gam" class="${d.dir==='in'?'inc':'exp'}" inputmode="decimal" placeholder="0" aria-label="Сумма">
 <div class="eo">${E(d.who)} · осталось ${fmt(Math.round(dRem(d)))} из ${fmt(d.amount)} ${cfg.cur}</div>
+${d.dir==='out'?`<label class="lnk"><input type="checkbox" id="dlnk"${linkOn()?' checked':''}>Записать как расход</label>`:''}
 <div class="shf"><button class="sm" id="dfull">Всё</button><button class="sm pr" id="gsvb">Записать</button></div>`;showGd(src);setTimeout(()=>{const a=$('#gam');if(a)a.focus({preventScroll:true})},60)}
 function saveDebt(){const who=($('#dwh').value||'').trim().slice(0,40)||'Без имени',am=pn($('#dam').value),paid=Math.max(0,Math.min(am,pn($('#dpd').value))),due=$('#ddu').value||'';
   if(!(am>0)){toast('Укажите сумму долга');return}
   if(gT.id){const d=cfg.debts.find(x=>x.id===gT.id);if(d)Object.assign(d,{who,dir:gT.dir,amount:am,paid,due});if(am-paid<=0){if(!d.closed)d.closed=ymd(new Date())}else delete d.closed}
-  else cfg.debts.push({id:uid(),who,dir:gT.dir,amount:am,paid,due,created:ymd(new Date()),log:[]});
+  else{cfg.debts.push({id:uid(),who,dir:gT.dir,amount:am,paid,due,created:ymd(new Date()),log:[]});
+    const cb=$('#dlnk');if(cb&&gT.dir==='in'){cfg.link=cb.checked;const out=Math.round((am-paid)*100)/100;
+      if(cb.checked&&out>0&&addLinkedExpense('debt',out,'Долг: выдал '+who))toast('Записано как расход: '+fmt(out)+' '+cfg.cur)}}
   save();closeGoal();render()}
 function saveDpay(){const d=cfg.debts.find(x=>x.id===gT.id),a=pn($('#gam').value);if(!d)return;if(!(a>0)){toast('Укажите сумму');return}
-  const add=Math.min(a,dRem(d));d.paid=Math.min(d.amount,d.paid+a);d.log=(d.log||[]).concat({d:ymd(new Date()),a:add}).slice(-200);if(dRem(d)<=0)d.closed=ymd(new Date());save();closeGoal();render();
-  if(dRem(d)<=0)toast('Долг «'+d.who+'» закрыт ✓')}
+  const add=Math.min(a,dRem(d));d.paid=Math.min(d.amount,d.paid+a);d.log=(d.log||[]).concat({d:ymd(new Date()),a:add}).slice(-200);if(dRem(d)<=0)d.closed=ymd(new Date());
+  let lk=false;const cb=$('#dlnk');if(cb&&d.dir==='out'){cfg.link=cb.checked;if(cb.checked&&add>0)lk=!!addLinkedExpense('debt',add,'Возврат долга: '+d.who)}
+  save();closeGoal();render();
+  if(dRem(d)<=0)toast('Долг «'+d.who+'» закрыт ✓'+(lk?' · записано как расход':''));else if(lk)toast('Записано как расход: '+fmt(add)+' '+cfg.cur)}
 function goDebts(){if(isModalOpen())return;ps='debts';if(tab==='tags')render();else setTab('tags')}
 // цели накопления
 const gd=$('#gd');let gT=null;
@@ -1667,11 +1738,12 @@ const subBar=(items,cur,at)=>`<div class="sbt" role="tablist">`+items.map(([k,l]
 const subPl=()=>subBar([['goals','Цели'],['budget','Бюджет и лимиты'],['debts','Долги']],ps,'ps');
 const subAn=()=>subBar([['all','Общая'],['trend','Динамика'],['cal','Календарь'],['tags','Теги']],AS,'as');
 const limCol=p=>p>=100?'#ff6b6b':p>=80?'#f2c14e':'var(--t)';
-function budgetHtml(){const X=sumBy(month,'expense'),Bd=cfg.budget||0,mn=MN[+month.slice(5,7)-1];
+function budgetHtml(){const X=sumBy(month,'expense'),Bd=budgetOf(month),mn=MN[+month.slice(5,7)-1],own=bmOwn(month);
   let h=`<div class="gsec"><div class="gsh"><span>Бюджет на месяц:</span><span></span></div>`;
   if(!(Bd>0))h+=`<div class="cd" style="color:var(--m);font-size:13px;line-height:1.45">Задайте сумму, которую хотите тратить за месяц, — покажу, сколько осталось.<div class="gb"><button class="sm pr" data-la="bud">Задать бюджет</button></div></div>`;
   else{const p=X/Bd*100;
-    h+=`<div class="cd"><div class="gh"><b>Бюджет · ${mn}</b><span>${fmt(X)} / ${fmt(Bd)} ${cfg.cur}</span></div><div class="lb"><i style="width:${Math.min(100,p)}%;background:${limCol(p)}"></i></div><div class="gx">${Math.round(p)}% · ${p>=100?'Превышен на '+fmt(Math.round(X-Bd)):'Осталось '+fmt(Math.round(Bd-X))} ${cfg.cur}</div><div class="gb"><button class="sm" data-la="bud">Изменить</button></div></div>`}
+    h+=`<div class="cd"><div class="gh"><b>Бюджет · ${mn}</b><span>${fmt(X)} / ${fmt(Bd)} ${cfg.cur}</span></div><div class="lb"><i style="width:${Math.min(100,p)}%;background:${limCol(p)}"></i></div><div class="gx">${Math.round(p)}% · ${p>=100?'Превышен на '+fmt(Math.round(X-Bd)):'Осталось '+fmt(Math.round(Bd-X))} ${cfg.cur}</div><div class="gx" style="margin-top:2px">${own?'Только для этого месяца':'Общий бюджет — для месяцев без своего'}</div><div class="gb"><button class="sm" data-la="bud">Изменить</button></div></div>`}
+  {const ks=Object.keys(cfg.bm||{}).filter(k=>Number(cfg.bm[k])>0).sort().reverse().slice(0,6);if(ks.length)h+=`<div class="gx" style="margin:6px 2px 0">Свои бюджеты: ${ks.map(k=>E(MS[+k.slice(5,7)-1]+(k.slice(0,4)!==month.slice(0,4)?' '+k.slice(2,4):'')+' '+fmt(cfg.bm[k]))).join(' · ')}${Number(cfg.budget)>0?' · общий '+fmt(cfg.budget):''}</div>`}
   h+=`<div class="gsh" style="margin-top:14px"><span>Лимиты по категориям:</span><button class="gp" data-la="new" aria-label="Добавить лимит">+</button></div>`;
   const ls=Object.entries(cfg.limits||{}).filter(([id,v])=>v>0&&ALL.some(c=>c.id===id&&!c.inc)).map(([id,v])=>{const sp=sumBy(month,'expense',id);return{id,v,sp,p:sp/v*100}}).sort((a,b)=>b.p-a.p);
   if(!ls.length)h+=`<div class="cd" style="color:var(--m);font-size:13px;line-height:1.45">Например: «Продукты 3 000 в месяц». Нажмите «+» — покажу, сколько уже потрачено и когда подойдёте к лимиту.</div>`;
@@ -1686,13 +1758,19 @@ function openLim(id,src){if(isModalOpen())return;const used=cfg.limits||{},cats=
 <label class="ef">Категория<select id="lcat"${id?' disabled':''}>${cats.map(c=>`<option value="${c.id}"${c.id===id?' selected':''}>${E(c.l)}</option>`).join('')}</select></label>
 <label class="ef">Лимит в месяц<input id="lam" inputmode="decimal" value="${id?used[id]:''}" placeholder="3 000" autocomplete="off"></label>
 <div class="shf">${id?'<button class="sm del" id="gdel">Удалить</button>':'<span></span>'}<button class="sm pr" id="gsvb">Сохранить</button></div>`;showGd(src)}
-function openBud(src){if(isModalOpen())return;cancelGestures();lockBg(true);gT={mode:'bud'};
-  gd.innerHTML=`<div class="eh"><b>Бюджет на месяц</b><button class="x" id="gcl" aria-label="Закрыть" style="font-size:20px;padding:4px 6px">×</button></div>
-<label class="ef">Сумма, ${E(cfg.cur)}<input id="bam" inputmode="decimal" value="${cfg.budget||''}" placeholder="20 000" autocomplete="off"></label>
-<div class="shf">${cfg.budget>0?'<button class="sm del" id="gdel">Убрать</button>':'<span></span>'}<button class="sm pr" id="gsvb">Сохранить</button></div>`;showGd(src)}
+function openBud(src){if(isModalOpen())return;cancelGestures();lockBg(true);const own=bmOwn(month),eff=budgetOf(month),sc=(own||Number(cfg.budget)>0)?'m':'all';gT={mode:'bud',scope:sc};const mn=MN[+month.slice(5,7)-1];
+  gd.innerHTML=`<div class="eh"><span class="sgm" id="bsc"><button data-bs="m" class="${sc==='m'?'on':''}">Только ${E(mn.toLowerCase())}</button><button data-bs="all" class="${sc==='all'?'on':''}">Все месяцы</button></span><button class="x" id="gcl" aria-label="Закрыть" style="font-size:20px;padding:4px 6px">×</button></div>
+<label class="ef">Сумма, ${E(cfg.cur)}<input id="bam" inputmode="decimal" value="${eff||''}" placeholder="20 000" autocomplete="off"></label>
+<div class="eo" id="bhint"></div>
+<div class="shf">${own||Number(cfg.budget)>0?'<button class="sm del" id="gdel">'+(own&&Number(cfg.budget)>0?'К общему':'Убрать')+'</button>':'<span></span>'}<button class="sm pr" id="gsvb">Сохранить</button></div>`;showGd(src);budHint()}
+function budHint(){const h=$('#bhint');if(!h||!gT||gT.mode!=='bud')return;const mn=MN[+month.slice(5,7)-1].toLowerCase();
+  h.textContent=gT.scope==='m'?'Бюджет задаётся только на '+mn+'. Остальные месяцы берут общий'+(Number(cfg.budget)>0?' ('+fmt(cfg.budget)+')':' (пока не задан)')+'.':'Общий бюджет действует во всех месяцах, где нет своего.'}
 function saveLim(){const id=gT.id||($('#lcat')||{}).value,v=pn($('#lam').value);if(!id)return;if(!(v>0)){toast('Укажите сумму лимита');return}
   cfg.limits=cfg.limits||{};cfg.limits[id]=v;save();closeGoal();render()}
-function saveBud(){const v=pn($('#bam').value);if(!(v>0)){toast('Укажите сумму бюджета');return}cfg.budget=v;save();closeGoal();render()}
+function saveBud(){const v=pn($('#bam').value);if(!(v>0)){toast('Укажите сумму бюджета');return}
+  if(gT&&gT.scope==='m'){if(!_obj(cfg.bm))cfg.bm={};cfg.bm[month]=v;toast('Бюджет · '+MN[+month.slice(5,7)-1]+': '+fmt(v)+' '+cfg.cur)}
+  else{cfg.budget=v;if(_obj(cfg.bm))delete cfg.bm[month]}
+  save();closeGoal();render()}
 function showGd(src){setOrigin(gd,src||fab);gd.classList.add('on');ov.className='on'}
 function openGoal(g,src){if(isModalOpen())return;cancelGestures();lockBg(true);gT={mode:'goal',id:g?g.id:null};const v=g||{name:'',target:'',saved:'',plan:'',tag:'',by:''};
   gd.innerHTML=`<div class="eh"><b>${g?'Цель':'Новая цель'}</b><button class="x" id="gcl" aria-label="Закрыть" style="font-size:20px;padding:4px 6px">×</button></div>
@@ -1707,7 +1785,10 @@ function openDep(g,src){if(isModalOpen())return;cancelGestures();lockBg(true);gT
   gd.innerHTML=`<div class="eh"><span class="sgm"><button data-gm="in" class="on">Взнос</button><button data-gm="out">Снять</button></span><button class="x" id="gcl" aria-label="Закрыть" style="font-size:20px;padding:4px 6px">×</button></div>
 <input id="gam" class="inc" inputmode="decimal" placeholder="0" aria-label="Сумма">
 <div class="eo">${E(g.name)} · ${fmt(g.saved)} из ${fmt(g.target)} ${cfg.cur}</div>
+<label class="lnk" id="glnkw"><input type="checkbox" id="glnk"${linkOn()?' checked':''}>Записать как расход</label>
 <div class="shf"><span></span><button class="sm pr" id="gdep">Внести</button></div>`;showGd(src);setTimeout(()=>{const a=$('#gam');if(a)a.focus({preventScroll:true})},60)}
+// галочка «записать как расход»: у нового долга — только когда деньги выданы (я одолжил), у взноса — не при «Снять»
+function lnkSync(){if(!gT)return;const a=$('#dlnkw');if(a)a.style.display=gT.mode==='debt'&&gT.dir==='in'?'':'none';const b=$('#glnkw');if(b)b.style.display=(gT.sign||1)>0?'':'none'}
 function closeGoal(){gd.classList.remove('on');gT=null;if(!isModalOpen()){ov.className='';lockBg(false)}cancelGestures()}
 function saveGoal(){if(!gT)return;if(gT.mode==='debt')return saveDebt();if(gT.mode==='dpay')return saveDpay();if(gT.mode==='lim')return saveLim();if(gT.mode==='bud')return saveBud();const nm=($('#gnm').value||'').trim().slice(0,40)||'Цель',tg=pn($('#gtg').value),sv=Math.max(0,pn($('#gsv').value)),pl=Math.max(0,pn($('#gpl').value)),tag=normTag($('#gtn').value),by=/^\d{4}-\d{2}-\d{2}$/.test(($('#gby')||{}).value||'')?$('#gby').value:'';
   if(!(tg>0)){toast('Укажите сумму цели');return}
@@ -1715,18 +1796,23 @@ function saveGoal(){if(!gT)return;if(gT.mode==='debt')return saveDebt();if(gT.mo
   else cfg.goals.push({id:uid(),name:nm,target:tg,saved:sv,plan:pl,tag,by,created:ymd(new Date()),log:[]});
   save();closeGoal();render()}
 function delGoal(){if(gT&&gT.mode==='debt'&&gT.id){const i=cfg.debts.findIndex(x=>x.id===gT.id);if(i<0){closeGoal();return}const it=cfg.debts[i];cfg.debts.splice(i,1);tomb(it.id);save();closeGoal();render();toast('Долг удалён','Отмена',()=>{untomb(it.id);cfg.debts.splice(Math.min(i,cfg.debts.length),0,it);save();render()},'del');return}
-  if(gT&&gT.mode==='bud'){const o=cfg.budget;cfg.budget=0;save();closeGoal();render();toast('Бюджет убран','Отмена',()=>{cfg.budget=o;save();render()},'del');return}
+  if(gT&&gT.mode==='bud'){const mo=month;
+    if(bmOwn(mo)){const o=cfg.bm[mo];delete cfg.bm[mo];save();closeGoal();render();toast('Бюджет месяца сброшен к общему','Отмена',()=>{cfg.bm[mo]=o;save();render()},'del');return}
+    const o=cfg.budget;cfg.budget=0;save();closeGoal();render();toast('Бюджет убран','Отмена',()=>{cfg.budget=o;save();render()},'del');return}
   if(gT&&gT.mode==='lim'&&gT.id){const id=gT.id,o=cfg.limits[id];delete cfg.limits[id];save();closeGoal();render();toast('Лимит удалён','Отмена',()=>{cfg.limits[id]=o;save();render()},'del');return}
   if(!gT||!gT.id)return;const i=cfg.goals.findIndex(x=>x.id===gT.id);if(i<0){closeGoal();return}const it=cfg.goals[i];cfg.goals.splice(i,1);tomb(it.id);save();closeGoal();render();
   toast('Цель удалена','Отмена',()=>{untomb(it.id);cfg.goals.splice(Math.min(i,cfg.goals.length),0,it);save();render()},'del')}
 function saveDep(){if(!gT)return;const g=cfg.goals.find(x=>x.id===gT.id),a=pn($('#gam').value);if(!g)return;if(!(a>0)){toast('Укажите сумму');return}
   const sg=gT.sign||1,real=goalDeposit(g,a,sg);if(g.saved>=g.target){if(!g.closed)g.closed=ymd(new Date())}else delete g.closed;
-  save();closeGoal();render();
-  if(g.saved>=g.target&&sg>0)toast('Цель «'+g.name+'» достигнута 🎉');else if(real>0)toast(sg>0?'Внесено в цель: +'+fmt(real):'Снято из цели: −'+fmt(real))}
+  let lk=false;const cb=$('#glnk');if(cb&&sg>0){cfg.link=cb.checked;if(cb.checked&&real>0)lk=!!addLinkedExpense('goal',real,'Взнос в цель «'+g.name+'»')}
+  save();closeGoal();render();const sfx=lk?' · записано как расход':'';
+  if(g.saved>=g.target&&sg>0)toast('Цель «'+g.name+'» достигнута 🎉'+sfx);else if(real>0)toast((sg>0?'Внесено в цель: +'+fmt(real):'Снято из цели: −'+fmt(real))+sfx)}
 gd.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!gT)return;
-  if(b.id==='gcl')closeGoal();else if(b.id==='gsvb')saveGoal();else if(b.id==='gdel')delGoal();else if(b.id==='gdep')saveDep();else if(b.id==='dfull'){const g=cfg.debts.find(x=>x.id===gT.id);if(g)$('#gam').value=String(Math.round(dRem(g)*100)/100)}else if(b.dataset.dm){gT.dir=b.dataset.dm;gd.querySelectorAll('[data-dm]').forEach(x=>x.classList.toggle('on',x===b))}
-  else if(b.dataset.gm){gT.sign=b.dataset.gm==='out'?-1:1;gd.querySelectorAll('[data-gm]').forEach(x=>x.classList.toggle('on',x===b));const a=$('#gam');a.className=gT.sign<0?'exp':'inc';$('#gdep').textContent=gT.sign<0?'Снять':'Внести'}});
+  if(b.id==='gcl')closeGoal();else if(b.id==='gsvb')saveGoal();else if(b.id==='gdel')delGoal();else if(b.id==='gdep')saveDep();else if(b.id==='dfull'){const g=cfg.debts.find(x=>x.id===gT.id);if(g)$('#gam').value=String(Math.round(dRem(g)*100)/100)}else if(b.dataset.dm){gT.dir=b.dataset.dm;gd.querySelectorAll('[data-dm]').forEach(x=>x.classList.toggle('on',x===b));lnkSync()}
+  else if(b.dataset.bs){gT.scope=b.dataset.bs;gd.querySelectorAll('[data-bs]').forEach(x=>x.classList.toggle('on',x===b));budHint();const a=$('#bam');if(a&&gT.scope==='all'&&!bmOwn(month)&&Number(cfg.budget)>0)a.value=cfg.budget}
+  else if(b.dataset.gm){gT.sign=b.dataset.gm==='out'?-1:1;gd.querySelectorAll('[data-gm]').forEach(x=>x.classList.toggle('on',x===b));const a=$('#gam');a.className=gT.sign<0?'exp':'inc';$('#gdep').textContent=gT.sign<0?'Снять':'Внести';lnkSync()}});
 gd.addEventListener('keydown',e=>{if(!gT)return;if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.preventDefault();if(gT.mode==='dep')saveDep();else saveGoal()}});
+
 
 let _tipsF=false;
 // советы: только действия и приёмы экономии (по книгам и проверенным методам); цифры с главного экрана не пересказываем
@@ -1849,6 +1935,7 @@ function swapAnim(dir,fn,els,from,op){els=els.filter(Boolean);settleAll();
     out.forEach(x=>x.cancel());f.anims=inn;
     inn[0].onfinish=()=>{if(flight===f){flight=null;wc(els,false)}}}}
 function setTab(t){settleAll();if(t===tab){window.scrollTo({top:0,behavior:'smooth'});return}slideTo(t,0,0,null)}
+
 // ---------- фильтры поиска: тип, сумма, период, тег ----------
 const FL={type:'',min:'',max:'',from:'',to:'',tag:''};
 const fOn=()=>!!(FL.type||FL.min!==''||FL.max!==''||FL.from||FL.to||FL.tag);
@@ -1907,13 +1994,13 @@ $('#fpclr').onclick=()=>{fReset(false);fApply()};
 document.addEventListener('pointerdown',e=>{if(fpEl.classList.contains('open')&&!e.target.closest('#fp,#fl,#toast')){fpSet(false);e.stopPropagation();e.preventDefault();swallowClick()}},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&fpEl.classList.contains('open'))fpSet(false)});
 var _gP=null,_gRaf=0,_nP=null,_nRaf=0,_nM='',_gM='';const _animN=new Set(),_animG=new Set();const G_C=2*Math.PI*36;
-function budgetLine(X){const Bd=cfg.budget||0;if(!(Bd>0))return'';const left=Math.round((Bd-X)*100)/100,cm=mk(new Date()),C=E(cfg.cur);
+function budgetLine(X){const Bd=budgetOf(month);if(!(Bd>0))return'';const left=Math.round((Bd-X)*100)/100,cm=mk(new Date()),C=E(cfg.cur);
   const cell=(l,v,c)=>`<div style="flex:1;min-width:0"><small style="display:block;color:var(--m);font-size:11px;margin-bottom:2px">${l}</small><b style="font-size:15px;font-weight:600;${c?'color:'+c:''}">${v}</b></div>`;
   let h=left<0?cell('Перерасход',fmt(Math.round(-left))+' '+C,'var(--rd)'):cell('Осталось потратить',fmt(Math.round(left))+' '+C);
   if(month===cm&&left>0){const d=new Date(),dl=new Date(d.getFullYear(),d.getMonth()+1,0).getDate()-d.getDate()+1;
     h+=cell(`В день · ещё ${dl} ${dl%10===1&&dl!==11?'день':dl%10>=2&&dl%10<=4&&(dl<10||dl>20)?'дня':'дней'}`,'≈ '+fmt(Math.floor(left/dl))+' '+C)}
   return `<div class="bln" style="display:flex;gap:14px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(128,128,128,.22)">${h}</div>`}
-function gaugeHtml(X){const Bd=cfg.budget||0;if(!(Bd>0))return'';const p=X/Bd*100,col=p>=100?'var(--rd)':p>=80?'#f2c14e':'var(--g)';
+function gaugeHtml(X){const Bd=budgetOf(month);if(!(Bd>0))return'';const p=X/Bd*100,col=p>=100?'var(--rd)':p>=80?'#f2c14e':'var(--g)';
   return `<div class="gg" id="gg" data-p="${p}" role="img" aria-label="Израсходовано ${Math.round(p)}% бюджета"><svg width="96" height="96" viewBox="0 0 80 80" aria-hidden="true"><circle class="gt" cx="40" cy="40" r="36" fill="none" stroke-width="6"/><circle class="gc" cx="40" cy="40" r="36" fill="none" stroke-width="6" stroke-linecap="round" stroke="${col}" stroke-dasharray="${G_C}" stroke-dashoffset="${G_C}" style="opacity:0"/></svg><div class="gn"><b${p>=100?' style="color:var(--rd)"':''}>0%</b><small>бюджета</small></div></div>`}
 const CHV='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
 // плавная кривая «smootherstep»: мягкий старт и мягкая остановка; speedOf — её скорость (0…1) для эффекта «смазывания»
@@ -2014,10 +2101,10 @@ function buildPage(pg,B,peek){
     if(AS==='tags'){B.innerHTML=head+tagsAnalytics(L,tot);return}
     const by={};L.forEach(t=>by[t.category]=(by[t.category]||0)+t.amount);
     const it=Object.entries(by).sort((a,b)=>b[1]-a[1]);
-    const pct=cfg.budget>0?Math.min(100,tot/cfg.budget*100):0;
+    const bdg=budgetOf(month),pct=bdg>0?Math.min(100,tot/bdg*100):0;
     B.innerHTML=head+pie(it,tot,null,pieAn(!peek,month))+(RG!=='month'?sumCard(from,to):'')+(RG==='year'?yearReview(from.slice(0,4)):'')+`<div class="cd" style="padding:2px 14px">`+it.map(([id,v])=>{const c=cd(id),p=v/tot*100,cm=RG==='month'?cmpCat(KD,id):null,bd=cm&&cm.d!=null&&Math.abs(cm.d)>=1?`<small class="dd" style="color:${(cm.d>0)===(KD==='expense')?'var(--rd)':'var(--g)'}">${sgn(cm.d)}</small>`:'';return `<div class="pl" data-cat="${id}" role="button" tabindex="0"><span class="pc" style="background:${c.c}">${p<1?'<1':Math.round(p)}%</span><span>${E(c.l)}${bd}</span><span>${fmt(v)}</span></div>`}).join('')+`</div>`+
     (!inc&&RG==='month'?extraCards(it):'')+
-    (!inc&&RG==='month'&&cfg.budget>0?`<div class="cd"><h4>Бюджет · ${fmt(tot)} / ${fmt(cfg.budget)}</h4><div class="bb"><s><u style="width:${pct}%;color:${pct>=100?'#ff6b6b':'var(--t)'};background:currentColor"></u></s></div></div>`:'')}
+    (!inc&&RG==='month'&&bdg>0?`<div class="cd"><h4>Бюджет · ${fmt(tot)} / ${fmt(bdg)}</h4><div class="bb"><s><u style="width:${pct}%;color:${pct>=100?'#ff6b6b':'var(--t)'};background:currentColor"></u></s></div></div>`:'')}
   else if(pg==='tags'){B.innerHTML=subPl()+(ps==='budget'?budgetHtml():ps==='debts'?debtsHtml():goalsHtml())}
   else B.innerHTML=tips(month).map(t=>`<div class="tip">${E(t)}</div>`).join('')}
 // короткие итоги недели / года: сколько потратили, на что больше всего, что изменилось к прошлому периоду
@@ -2260,6 +2347,7 @@ sbwEl().addEventListener('click',e=>{if(isModalOpen())return;const b=e.target.cl
   if(b.dataset.as){if(b.dataset.as===AS)return;AS=b.dataset.as}else{if(b.dataset.ps===ps)return;ps=b.dataset.ps}
   render();softIn(true)});
 $('#tabs').onclick=e=>{if(isModalOpen()||tbdBlock)return;const b=e.target.closest('[data-t]');if(b)setTab(b.dataset.t)};
+
 // ================= page carousel: swipe / tab change =================
 // The neighbouring page is pre-built next to the current one and both follow the finger,
 // so the next page is actually visible while dragging. Release continues from the finger's position.
@@ -2496,6 +2584,7 @@ function endMs(e,cancel){if(!ms||e.pointerId!==ms.id)return;const m=ms;ms=null;i
   else{const t=$('#tin');t.style.transition='transform .5s cubic-bezier(.22,1,.36,1),opacity .3s';t.style.transform='';t.style.opacity=''}}
 topEl.addEventListener('pointerup',e=>endMs(e,false));topEl.addEventListener('pointercancel',e=>endMs(e,true));
 topEl.addEventListener('click',e=>{if(msBlock){e.stopPropagation();e.preventDefault()}},true);
+
 
 // ---------- настройки ----------
 const PAL=['#8fc9a0','#e3a27c','#7fb8d9','#8c9ee0','#a597e0','#7fd0c4','#de8f8f','#e0a0c4','#c9a0e0','#d98fcf','#9fb4c9','#95b8f0','#e8c27a','#bfd98a','#c8b88a','#e8a6b8'];
@@ -2800,7 +2889,7 @@ function importData(text){
     const sid=v=>String(v==null?'':v).replace(/[^\w-]/g,'').slice(0,40),isHex=v=>/^#[0-9a-f]{6}$/i.test(String(v));
     const have=new Set(tx.map(t=>t.id)),hadTx=tx.length>0;
     const add=d.tx.filter(t=>t&&sid(t.id)&&!have.has(sid(t.id))&&/^\d{4}-\d{2}-\d{2}/.test(String(t.date))&&(t.type==='income'||t.type==='expense')).map(t=>({id:sid(t.id),type:t.type,amount:Math.max(0,Number(t.amount)||0),category:sid(t.category)||(t.type==='income'?'in_other':'other'),note:String(t.note||''),date:String(t.date).slice(0,10),...(Array.isArray(t.tags)&&t.tags.map(normTag).filter(Boolean).length?{tags:[...new Set(t.tags.map(normTag).filter(Boolean))].slice(0,8)}:{}),...(t.oc?{oc:String(t.oc),oa:Number(t.oa)||0,...(Number(t.rt)>0?{rt:Number(t.rt)}:{})}:{}),...(t.rid?{rid:sid(t.rid)}:{})}));
-    const hasExtra=!!(d.cfg&&(Number(d.cfg.budget)>0||(d.cfg.goals||[]).length||(d.cfg.debts||[]).length||(d.cfg.rec||[]).length||(d.cfg.custom||[]).length));
+    const hasExtra=!!(d.cfg&&(Number(d.cfg.budget)>0||Object.keys(_obj(d.cfg.bm)?d.cfg.bm:{}).length||(d.cfg.goals||[]).length||(d.cfg.debts||[]).length||(d.cfg.rec||[]).length||(d.cfg.custom||[]).length));
     if(!add.length&&!hasExtra){toast('Новых данных в файле нет');return}
     bqAsk('Импорт копии',add.length?'Добавить операций из файла: '+add.length+'? Настройки, цели и долги из файла тоже добавятся.':'Новых операций нет. Добавить из файла настройки, цели и долги?','Добавить',()=>applyData(d,{add,sid,isHex,hadTx}));}
   catch{toast('Не удалось прочитать файл')}}
@@ -2822,6 +2911,7 @@ function applyMerge(d,o){const {add,sid,isHex,hadTx}=o;
       if(!hadTx&&CS.includes(c.cur)&&c.cur!==cfg.cur){cfg.cur=c.cur;cfg.rates={}}
       if(c.cur===cfg.cur&&c.rates&&typeof c.rates==='object')CS.forEach(k=>{const v=Number(c.rates[k]);if(k!==cfg.cur&&v>0&&!(parseFloat(cfg.rates[k])>0))cfg.rates[k]=v});
       if(!(cfg.budget>0)&&Number(c.budget)>0)cfg.budget=Number(c.budget);
+      if(_obj(c.bm)){if(!_obj(cfg.bm))cfg.bm={};Object.entries(c.bm).forEach(([k,v])=>{if(/^\d{4}-\d{2}$/.test(k)&&Number(v)>0&&!(Number(cfg.bm[k])>0))cfg.bm[k]=Number(v)})}
       if(Array.isArray(c.hide))c.hide.map(sid).filter(Boolean).forEach(x=>{if(!cfg.hide.includes(x))cfg.hide.push(x)});
       if(Array.isArray(c.tplHide))c.tplHide.map(x=>String(x).slice(0,80)).forEach(x=>{if(!cfg.tplHide.includes(x))cfg.tplHide.push(x)})}
     const lr={};Object.entries(d.learn||{}).forEach(([k,v])=>{if(sid(v))lr[String(k).slice(0,80)]=sid(v)});
@@ -2831,6 +2921,7 @@ function normState(){
 if(IN_TG&&!cfg.theme)cfg.theme='auto';
 if(!_obj(learn))learn={};if(typeof cfg.cur!=='string'||!cfg.cur)cfg.cur='MDL';if(!(Number(cfg.budget)>=0))cfg.budget=0;
 if(!_obj(cfg.rates))cfg.rates={};if(!_obj(cfg.catOv))cfg.catOv={};
+if(!_obj(cfg.bm))cfg.bm={};if(!_obj(cfg.rman))cfg.rman={};Object.keys(cfg.bm).forEach(k=>{if(!/^\d{4}-\d{2}$/.test(k)||!(Number(cfg.bm[k])>0))delete cfg.bm[k]});delete cfg.notified;
 ['custom','goals','debts','rec'].forEach(k=>{if(cfg[k]!==undefined)cfg[k]=_okArr(cfg[k])});
 if(Array.isArray(cfg.cc))cfg.cc=cfg.cc.filter(x=>typeof x==='string');
 tx.forEach(t=>{t.amount=Number.isFinite(+t.amount)?Math.abs(+t.amount):0;if(typeof t.date!=='string'||!/^\d{4}-\d{2}-\d{2}/.test(t.date))t.date=ymd(new Date());else t.date=t.date.slice(0,10);
@@ -2851,34 +2942,38 @@ function applyReplace(d){
     normState();buildAll();snapTx(false);save()}
   finally{CL.mute=false}
   applyTheme(false);render();renderSt()}
+
 // ---- окно «Валюта и курсы» / «Категории, лимиты и бюджет» ----
 const cf=$('#cf');let cfT=null;
 function stCover(on){const w=$('#stw');if(!w)return;if(on){if(w.classList.contains('on')){w.classList.add('cov');w.inert=true}}else if(w.classList.contains('cov')){w.classList.remove('cov');if(w.classList.contains('on'))w.inert=false}}
 const XB='<button class="x" id="cfx" aria-label="Закрыть" style="font-size:20px;padding:4px 6px">×</button>';
-function renderCf(){if(!cfT)return;
+function renderCf(){if(!cfT)return;if(cfT==='lock')return renderLockCf();
   if(cfT==='cur'){const used=new Set(tx.map(t=>t.oc).filter(Boolean)),act=codes().filter(c=>c!==cfg.cur&&(parseFloat(cfg.rates[c])>0||used.has(c)||cfg.curList.includes(c))),rest=codes().filter(c=>c!==cfg.cur&&!act.includes(c));
     cf.innerHTML=`<div class="eh"><b>Валюта и курсы</b>${XB}</div>
 <label>Валюта<select id="cu">${codes().map(c=>`<option${c===cfg.cur?' selected':''}>${c}</option>`).join('')}</select></label>
-${act.map(c=>`<label>1 ${c} в ${cfg.cur}<input class="rt" data-c="${c}" inputmode="decimal" value="${cfg.rates[c]||''}" placeholder="Курс"></label>`).join('')}
+${act.map(c=>`<label><span>1 ${c} в ${cfg.cur}<small style="color:var(--m)">${rmark(c)}</small></span><input class="rt" data-c="${c}" inputmode="decimal" value="${cfg.rates[c]||''}" placeholder="Курс"></label>`).join('')}
+<label class="lnk"><input type="checkbox" id="arate"${ratesAuto()?' checked':''}>Обновлять курсы автоматически</label>
+<label>Курсы: open.er-api.com<button type="button" class="sm" id="arnow">Обновить</button></label>
+<div class="hint2" id="arst">${E(ratesStatus())}</div>
 <button type="button" class="cab" id="cadb">Добавить валюту<span>${cadOpen?'▴':'▾'}</span></button>
 ${cadOpen?`<div class="cpl">${rest.map(c=>`<button type="button" class="cpi" data-c="${c}"><b>${c}</b><span>${E(CURS[c]?CURS[c].n:c)}</span></button>`).join('')}<label>Другой код<input id="cadd" placeholder="GBP" autocomplete="off" autocapitalize="characters"></label></div>`:''}
 <div class="hint2">Задайте курс — и фразы вроде «кофе 5 евро», «такси $10», «один доллар» сами переведутся в ${E(cfg.cur)}. Курс можно написать и в строке записи: «курс евро 19.5». При смене курса все записи в этой валюте пересчитываются. Любую валюту можно добавить по коду из 3 букв.</div>`;
     $('#cu').onchange=e=>{const nc=e.target.value,oc=cfg.cur;if(nc===oc)return;
       const rt=parseFloat(cfg.rates[nc])||0,CS=codes();
       const apply=f=>{const R=v=>Math.round((Number(v)||0)*f*100)/100;
-        if(f){tx.forEach(t=>{t.amount=R(t.amount)});cfg.budget=R(cfg.budget);
+        if(f){tx.forEach(t=>{t.amount=R(t.amount)});cfg.budget=R(cfg.budget);Object.keys(cfg.bm||{}).forEach(k=>{cfg.bm[k]=R(cfg.bm[k])});
           Object.keys(cfg.limits).forEach(k=>{cfg.limits[k]=R(cfg.limits[k])});
           cfg.goals.forEach(g=>{g.target=R(g.target);g.saved=R(g.saved);g.plan=R(g.plan);(g.log||[]).forEach(l=>{if(typeof l.a==='number')l.a=R(l.a)})});
           cfg.debts.forEach(d=>{d.amount=R(d.amount);d.paid=R(d.paid);(d.log||[]).forEach(l=>{if(typeof l.a==='number')l.a=R(l.a)})});
           cfg.rec.forEach(r=>{r.amount=R(r.amount)})}
         const nr={};if(f)CS.forEach(c=>{if(c===nc)return;const v=c===oc?1:(parseFloat(cfg.rates[c])||0);if(v>0)nr[c]=Math.round(v*f*1e6)/1e6});
-        cfg.rates=nr;cfg.cur=nc;save();render();renderCf();renderSt();toast('Валюта: '+nc+(f?' · суммы пересчитаны':''))};
-      const has=tx.length||cfg.budget>0||cfg.goals.length||cfg.debts.length||cfg.rec.length;
+        cfg.rates=nr;cfg.rman={};cfg.ratesAt=0;cfg.cur=nc;save();render();renderCf();renderSt();toast('Валюта: '+nc+(f?' · суммы пересчитаны':''))};
+      const has=tx.length||cfg.budget>0||Object.keys(cfg.bm||{}).length||cfg.goals.length||cfg.debts.length||cfg.rec.length;
       renderCf();
       if(!has){apply(0);return}
       if(rt>0)bqAsk('Сменить валюту на '+nc+'?','Курс: 1 '+nc+' = '+fmt(rt)+' '+oc+'. Все суммы (операции, бюджет, лимиты, цели, долги, повторяющиеся) будут пересчитаны в '+nc+'.','Пересчитать',()=>apply(1/rt));
       else bqAsk('Сменить валюту на '+nc+'?','Курс 1 '+nc+' в '+oc+' не задан, поэтому суммы не пересчитаются: останутся прежними числами, но будут считаться в '+nc+'. Чтобы пересчитать, сначала введите курс ниже.','Без пересчёта',()=>apply(0))};
-    cf.querySelectorAll('.rt').forEach(i=>i.onchange=()=>{const c=i.dataset.c,v=setRate(c,i.value);if(lastRateN){render();toast('Посчитано операций без курса: '+lastRateN)}if(drafts.length)renderRev(true);
+    cf.querySelectorAll('.rt').forEach(i=>i.onchange=()=>{const c=i.dataset.c,v=setRate(c,i.value);ratePin(c,v);if(lastRateN){render();toast('Посчитано операций без курса: '+lastRateN)}if(drafts.length)renderRev(true);
       // прошлые операции сохраняют курс на момент записи; пересчёт — только по явному согласию
       if(v>0){const n=tx.filter(t=>t.oc===c&&t.oa>0&&t.amount>0&&Math.round(t.oa*v*100)/100!==t.amount).length;
         if(n)bqAsk('Пересчитать прошлые операции?','Операции в '+c+' ('+n+' шт.) сохраняют курс, который действовал при записи. Пересчитать их по новому курсу 1 '+c+' = '+fmt(v)+' '+cfg.cur+'?','Пересчитать',()=>{setRate(c,v,true);render();toast('Пересчитано операций: '+lastRateN)})}});
@@ -2887,7 +2982,7 @@ ${cadOpen?`<div class="cpl">${rest.map(c=>`<button type="button" class="cpi" dat
       const n=cf.querySelector('.rt[data-c="'+c+'"]');if(n)n.focus()};
     const cb=$('#cadb');if(cb)cb.onclick=()=>{cadOpen=!cadOpen;renderCf()};
     cf.querySelectorAll('.cpi').forEach(b=>b.onclick=()=>addCur(b.dataset.c));
-    const ca=$('#cadd');if(ca)ca.onchange=e=>{const c=e.target.value.trim().toUpperCase();e.target.value='';if(c)addCur(c)}}
+    const ca=$('#cadd');if(ca)ca.onchange=e=>{const c=e.target.value.trim().toUpperCase();e.target.value='';if(c)addCur(c)};ratesBind()}
 }
 function openCf(mode,src){if(isModalOpen())return;cadOpen=false;cancelGestures();setOrigin(cf,src||fab);stCover(true);lockBg(true);cfT=mode;renderCf();cf.scrollTop=0;cf.classList.add('on');ov.className='on'}
 function closeCf(){if(!cfT&&!cf.classList.contains('on'))return;cf.classList.remove('on');cfT=null;if(!isModalOpen()){ov.className='';lockBg(false)}cancelGestures();stCover(false)}
@@ -2913,6 +3008,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&cfg.theme
 // ---- всплывающее меню настроек (поверх страницы, ничего не сдвигает) ----
 function renderSt(){
   $('#st').innerHTML=`<label>Валюта и курсы<button class="sm" id="cub">${E(cfg.cur)}</button></label>
+<label>Защита<button class="sm" id="lkb">${lockRec()?'PIN включён':'Выключена'}</button></label>
+<label>Долги и цели → расходы<button type="button" class="tg${linkOn()?' on':''}" id="lnkb" role="switch" aria-checked="${linkOn()}" aria-label="Записывать долги и взносы в цели как расходы"></button></label>
 ${cfg.tplHide.length?`<label>Быстрые шаблоны<button class="sm" id="tpr">Вернуть скрытые (${cfg.tplHide.length})</button></label>`:''}
 ${(()=>{const v=cfg.theme==='light'||cfg.theme==='auto'?cfg.theme:'dark';return `<div class="thr"><span>Тема</span><div class="thm" id="thm" role="radiogroup" aria-label="Тема" data-v="${v==='light'?'l':v==='auto'?'a':'d'}"><i></i>${[['dark','Тёмная','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg>'],['auto','Авто','Авто'],['light','Светлая','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>']].map(([k,n,h])=>`<button type="button" role="radio" data-th="${k}" aria-label="${n}" title="${n}" aria-checked="${v===k}" class="${v===k?'on':''}">${h}</button>`).join('')}</div></div>`})()}
 <button class="bkrow" id="tourb">Показать обучение</button>
@@ -2921,6 +3018,8 @@ ${(()=>{const v=cfg.theme==='light'||cfg.theme==='auto'?cfg.theme:'dark';return 
     cfg.theme=k;save();const g=$('#thm');g.dataset.v=k==='light'?'l':k==='auto'?'a':'d';
     g.querySelectorAll('button').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-checked',String(on))});applyTheme(true)};
   $('#cub').onclick=e=>openCf('cur',e.currentTarget);
+  $('#lkb').onclick=e=>openCf('lock',e.currentTarget);
+  $('#lnkb').onclick=e=>{const b=e.currentTarget;cfg.link=!linkOn();save();b.classList.toggle('on',cfg.link!==false);b.setAttribute('aria-checked',String(cfg.link!==false))};
   if($('#tpr'))$('#tpr').onclick=()=>{cfg.tplHide=[];save();renderSt();toast('Шаблоны возвращены')};
   $('#bkp').onclick=()=>openBq('backup');$('#tourb').onclick=()=>{closeSettings();if(window.AppTour)AppTour.replay()}}
 // ---- маленькое окошко снизу: подтверждение сброса и резервная копия ----
@@ -2947,6 +3046,7 @@ bq.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   else if(a==='imp'){$('#fi').accept='.xlsx,.xlsm,.csv,.tsv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';$('#fi').click();closeBq()}
   else if(a==='impj'){$('#fi').accept='.json,application/json';$('#fi').click();closeBq()}});
 $('#fi').onchange=e=>{const f=e.target.files[0];if(f)importFile(f,e.target)};
+
 // ================= окно выбора категории: сетка по три в ряд, внизу «Добавить» и «Редактировать» =================
 const cpEl=$('#cp');let cpS=null;
 const CPROT=['other','in_other'];
@@ -3061,6 +3161,7 @@ function toast(m,lbl,fn,kind,html){const el=$('#toast');clearTimeout(tt);if(!_tb
   el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
   // после перетаскивания «Отмена» не должна нажаться сама
   el.addEventListener('click',e=>{if(Math.abs(dy)>6){e.stopPropagation();e.preventDefault();dy=0}},true)})();
+
 // ================= повторяющиеся операции =================
 // правило: {id,type,amount,category,note,freq:'month'|'week'|'year',mode:'day'|'first'|'last' (для месяца),day,wd (0=пн…6=вс),mon (0…11),start,end,done,paused}
 //   start — дата создания (раньше неё записи не создаются), end — дата последней записи (рассрочка), done — дата последней созданной записи
@@ -3185,15 +3286,8 @@ rcEl.addEventListener('keydown',e=>{if(rcS&&rcS.view==='form'&&e.key==='Enter'&&
 ['pointerdown','pointermove','pointerup'].forEach(ev=>rcEl.addEventListener(ev,e=>e.stopPropagation()));
 ['touchstart','touchmove'].forEach(ev=>rcEl.addEventListener(ev,e=>e.stopPropagation(),{passive:true}));
 // при запуске и когда возвращаетесь в приложение — создаём наступившие записи
-const _recN=applyRec();setTimeout(notifyDue,1500);
-const notifOK=()=>{try{return 'Notification' in window}catch(e){return false}};
-function notifyDue(){try{return;
-  const td=ymd(new Date());if(!_obj(cfg.notified))cfg.notified={};const sent=cfg.notified;
-  const l=remList().filter(x=>x.n<=1&&sent[x.k]!==td);if(!l.length)return;
-  l.forEach(x=>{sent[x.k]=td});const old=ymd(new Date(Date.now()-30*864e5));Object.keys(sent).forEach(k=>{if(sent[k]<old)delete sent[k]});save();
-  const body=l.map(x=>x.t).join('\n'),o={body,tag:'fin-due'},plain=()=>{try{new Notification('Финансы',o)}catch(e){}};
-  const sw=navigator.serviceWorker;if(sw&&sw.getRegistration)sw.getRegistration().then(r=>{if(r&&r.showNotification)r.showNotification('Финансы',o);else plain()}).catch(plain);else plain()}catch(e){}}
-function recTick(){notifyDue();if(isModalOpen())return;if(applyRec()){render();toast('Добавлена повторяющаяся операция')}}
+const _recN=applyRec();
+function recTick(){if(isModalOpen())return;if(applyRec()){render();toast('Добавлена повторяющаяся операция')}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)recTick()});
 // ---- прокрутка нужна только если содержимое реально не помещается над нижней панелью ----
 let _fitT=0;
@@ -3213,6 +3307,7 @@ render();
 if(_recN)setTimeout(()=>toast('Повторяющиеся операции добавлены: '+_recN),debtList().some(x=>x.n<=3)?5800:500);
 $('#sum').addEventListener('click',e=>{if(e.target.closest('#carry')){if(cfg.carry&&month>=cfg.carryFrom)cfg.carry=false;else{cfg.carry=true;cfg.carryFrom=month}save();render();return}{const g=e.target.closest('[data-go]');if(g&&g.dataset.go!=='rec')goDebts()}});
 setTimeout(()=>{const l=debtList().filter(x=>x.n<=3);if(l.length)toast('🔔 '+l[0].d.who+': '+dueTxt(l[0].n)+(l.length>1?' · ещё '+(l.length-1):''))},700);
+
 // ================= Облачная синхронизация через Telegram CloudStorage =================
 // Данные → JSON → gzip (если есть CompressionStream, иначе без сжатия) → base64 → куски по 3800 символов
 // в ключи d0, d1, … ; служебный ключ meta (число кусков, время сохранения, контрольные суммы) пишется ПОСЛЕДНИМ.
@@ -3223,8 +3318,8 @@ const cloudHs=str=>{let h1=0xdeadbeef,h2=0x41c6ce57;for(let i=0;i<str.length;i++
   h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
   return (4294967296*(2097151&h2)+(h1>>>0)).toString(36)};
 // хэш данных без «служебных» полей, которые меняются сами (напоминания о копии)
-const cloudHash=()=>{const c={...cfg};['backupSnooze','lastBackup','notified'].forEach(k=>delete c[k]);return cloudHs(JSON.stringify({tx,cfg:c,learn}))};
-const cloudHas=()=>tx.length>0||cfg.goals.length>0||cfg.debts.length>0||(cfg.rec||[]).length>0||cfg.budget>0||cfg.custom.length>0;
+const cloudHash=()=>{const c={...cfg};['backupSnooze','lastBackup','notified','ratesAt','ratesErr'].forEach(k=>delete c[k]);return cloudHs(JSON.stringify({tx,cfg:c,learn}))};
+const cloudHas=()=>tx.length>0||cfg.goals.length>0||cfg.debts.length>0||(cfg.rec||[]).length>0||cfg.budget>0||Object.keys(cfg.bm||{}).length>0||cfg.custom.length>0;
 
 // ---- индикатор: сохранено / синхронизация / ошибка ----
 const CS_TXT={ok:'сохранено',sync:'синхронизация',err:'ошибка'};
@@ -3316,7 +3411,7 @@ function mergeCloudData(d){
     const arr=(a,b)=>[...new Set([...(Array.isArray(a)?a:[]),...(Array.isArray(b)?b:[])])];
     const mg={...dc,...cfg};                                  // одиночные настройки: выигрывают локальные
     ['goals','debts','rec','custom'].forEach(k=>{mg[k]=un(cfg[k],dc[k])});
-    ['rates','limits','catOv'].forEach(k=>{mg[k]={...(_obj(dc[k])?dc[k]:{}),...(_obj(cfg[k])?cfg[k]:{})}});
+    ['rates','limits','catOv','bm','rman'].forEach(k=>{mg[k]={...(_obj(dc[k])?dc[k]:{}),...(_obj(cfg[k])?cfg[k]:{})}});
     ['cc','curList','tplHide'].forEach(k=>{mg[k]=arr(cfg[k],dc[k])});
     mg.del=del;
     cfg=mg;tx=out;learn={...(_obj(d.learn)?d.learn:{}),...learn};
@@ -3398,6 +3493,208 @@ async function cloudSync(why){
     const m='Эта версия Telegram не поддерживает облачное хранилище (нужна 6.9+). Данные хранятся только на устройстве.';
     CL.lastErr={t:'fatal',m};csSet('err',m);return}
   CL.on=true;cloudSync('start')})();
+
+// ================= автокурсы: open.er-api.com =================
+// Курс записывается в каждую операцию в момент создания (поле rt) — обновление курса прошлое не трогает.
+// Курс, который вы ввели руками (в окне валют или фразой «курс евро 19.5»), помечен в cfg.rman и автообновлением не перезаписывается:
+// чтобы вернуть автокурс для валюты, очистите поле курса.
+const RATES_URL='https://open.er-api.com/v6/latest/',RATES_TTL=12*3600e3;
+const ratesAuto=()=>cfg.autoRates!==false;
+// ответ API: {result:'success', rates:{USD:0.0575,…}} — сколько единиц валюты за 1 основную → нам нужно «1 единица валюты = N основной»
+function ratesFromApi(j,base,want){
+  if(!j||j.result!=='success'||!j.rates||typeof j.rates!=='object')return null;
+  const out={};
+  for(const c of want){if(c===base)continue;const r=Number(j.rates[c]);if(r>0&&isFinite(r)){const v=Math.round(1e6/r)/1e6;if(v>0)out[c]=v}}
+  return out}
+function ratesWanted(){
+  const s=new Set([...(cfg.curList||[]),...needRate,...tx.map(t=>t.oc).filter(Boolean),...Object.keys(cfg.rates||{}).filter(k=>parseFloat(cfg.rates[k])>0)]);
+  s.delete(cfg.cur);return[...s].filter(c=>/^[A-Z]{3}$/.test(c))}
+let _ratesBusy=null;
+function ratesRefresh(force){
+  if(!force&&!ratesAuto())return Promise.resolve(false);
+  const fresh=cfg.ratesBase===cfg.cur&&Date.now()-(cfg.ratesAt||0)<RATES_TTL;
+  if(!force&&fresh&&!needRate.size)return Promise.resolve(false);
+  if(_ratesBusy)return _ratesBusy;
+  _ratesBusy=(async()=>{
+    try{
+      const want=ratesWanted();
+      if(!want.length){cfg.ratesErr='';return true}
+      const ctl=typeof AbortController==='function'?new AbortController():null,tm=setTimeout(()=>{try{ctl&&ctl.abort()}catch{}},9000);
+      let r;try{r=await fetch(RATES_URL+encodeURIComponent(cfg.cur),{signal:ctl?ctl.signal:undefined,cache:'no-store'})}finally{clearTimeout(tm)}
+      if(!r.ok)throw new Error('http '+r.status);
+      const got=ratesFromApi(await r.json(),cfg.cur,want);
+      if(!got)throw new Error('format');
+      let n=0;
+      for(const[c,v]of Object.entries(got)){
+        if(cfg.rman&&cfg.rman[c])continue;                         // ручной курс не трогаем
+        if(parseFloat(cfg.rates[c])===v)continue;
+        setRate(c,v);n++}                                          // setRate досчитывает только черновики и операции без суммы
+      cfg.ratesAt=Date.now();cfg.ratesBase=cfg.cur;cfg.ratesErr='';save();
+      try{if(drafts.length)renderRev(true)}catch{}
+      try{if(lastRateN)render()}catch{}
+      try{ratesUi()}catch{}
+      return true
+    }catch(e){
+      cfg.ratesErr=(e&&e.name==='AbortError')?'таймаут':(navigator.onLine===false?'нет интернета':String((e&&e.message)||e).slice(0,40));
+      try{ratesUi()}catch{}
+      return false
+    }finally{_ratesBusy=null}
+  })();
+  return _ratesBusy}
+// строка ввода: валюта без курса → берём автокурс (или просим ввести руками)
+function needRateFlow(){
+  const nr=[...needRate],manual=()=>toast('Укажите курс '+nr.join(', ')+' в строке записи — сумма пока 0');
+  if(!ratesAuto()){manual();return}
+  toast('Беру курс '+nr.join(', ')+'…');
+  ratesRefresh(true).then(ok=>{
+    const left=nr.filter(c=>!(parseFloat(cfg.rates[c])>0));
+    if(ok&&!left.length){toast('Курс: '+nr.map(c=>'1 '+c+' = '+fmt(parseFloat(cfg.rates[c]))).join(' · '));needRate.clear();
+      try{if(cfg.auto&&drafts.length&&sh.classList.contains('on'))startAuto()}catch{}}
+    else toast(ok?'Нет курса '+left.join(', ')+' — укажите вручную':'Нет связи — укажите курс вручную')})}
+function ratePin(c,v){if(!_obj(cfg.rman))cfg.rman={};if(v>0)cfg.rman[c]=1;else{delete cfg.rman[c];if(ratesAuto())ratesRefresh(true)}save()}
+const rmark=c=>cfg.rman&&cfg.rman[c]?' · вручную':(ratesAuto()&&parseFloat(cfg.rates[c])>0&&cfg.ratesAt?' · авто':'');
+function ratesStatus(){
+  const when=cfg.ratesAt?new Date(cfg.ratesAt):null,p=n=>String(n).padStart(2,'0');
+  const t=when?'обновлено '+p(when.getDate())+'.'+p(when.getMonth()+1)+' '+p(when.getHours())+':'+p(when.getMinutes()):'ещё не обновлялись';
+  return (ratesAuto()?'Курсы '+t+(cfg.ratesErr?' · ошибка: '+cfg.ratesErr:'')+'. ':'Автообновление выключено. ')+'Прошлые операции хранят свой курс. Курс, введённый вручную, не перезаписывается — чтобы вернуть автокурс, очистите поле.'}
+function ratesUi(){if(cfT==='cur'&&!(document.activeElement&&document.activeElement.classList&&document.activeElement.classList.contains('rt')))renderCf();else{const e=$('#arst');if(e)e.textContent=ratesStatus()}}
+function ratesBind(){
+  const a=$('#arate'),b=$('#arnow');
+  if(a)a.onchange=e=>{cfg.autoRates=e.target.checked;save();if(cfg.autoRates)ratesRefresh(true);renderCf()};
+  if(b)b.onclick=()=>{b.disabled=true;ratesRefresh(true).then(ok=>{b.disabled=false;toast(ok?'Курсы обновлены':'Не удалось обновить курсы: '+(cfg.ratesErr||'нет связи'))})}}
+setTimeout(()=>{ratesRefresh(false)},2500);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)ratesRefresh(false)});
+
+// ================= блокировка приложения: PIN (+ биометрия внутри Telegram) =================
+// PIN хранится только на этом устройстве (localStorage 'finapp.lock', в виде PBKDF2-хэша с солью).
+// В JSON-копию и в облако Telegram он не попадает. Это защита от случайного взгляда, а не от того, кто может стереть данные приложения.
+const LK_KEY='finapp.lock';
+const lockRec=()=>{try{const r=JSON.parse(localStorage.getItem(LK_KEY)||'null');return r&&r.h&&r.s?r:null}catch{return null}};
+const lockPut=r=>{try{if(r)localStorage.setItem(LK_KEY,JSON.stringify(r));else localStorage.removeItem(LK_KEY)}catch{}};
+const _b64=u=>btoa(String.fromCharCode.apply(null,Array.from(u))),_unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function pinHash(pin,saltB64){
+  const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(String(pin)),'PBKDF2',false,['deriveBits']);
+  const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:_unb64(saltB64),iterations:150000,hash:'SHA-256'},k,256);
+  return _b64(new Uint8Array(b))}
+// после 5 неверных попыток — пауза: 30 с, 60 с, 2 мин … до 15 мин
+const lockoutMs=f=>f<5?0:Math.min(15*60e3,30e3*Math.pow(2,f-5));
+async function pinSet(pin,len){const s=_b64(crypto.getRandomValues(new Uint8Array(16))),old=lockRec()||{};
+  lockPut({v:1,s,h:await pinHash(pin,s),n:len,bio:old.bio?1:0,d:old.d==null?60:old.d,f:0,u:0})}
+async function pinCheck(pin){const r=lockRec();return !!r&&(await pinHash(pin,r.s))===r.h}
+const lkCrypto=()=>{try{return !!(window.crypto&&crypto.subtle&&crypto.getRandomValues)}catch{return false}};
+
+// ---- биометрия: Telegram.WebApp.BiometricManager (Bot API 7.2+) ----
+const lkBM=()=>{try{return IN_TG&&TGW.BiometricManager&&TGW.isVersionAtLeast&&TGW.isVersionAtLeast('7.2')?TGW.BiometricManager:null}catch{return null}};
+function bmInit(cb){const b=lkBM();if(!b){cb(false);return}
+  const go=()=>cb(!!(b.isInited&&b.isBiometricAvailable));
+  if(b.isInited){go();return}
+  let done=false;const t=setTimeout(()=>{if(!done){done=true;cb(false)}},3500);
+  try{b.init(()=>{if(done)return;done=true;clearTimeout(t);go()})}catch{clearTimeout(t);cb(false)}}
+const lkBioReady=()=>{const r=lockRec(),b=lkBM();return !!(r&&r.bio&&b&&b.isInited&&b.isBiometricAvailable&&b.isAccessGranted)};
+function bioEnable(cb){const b=lkBM();if(!b){toast('Биометрия доступна только внутри Telegram 7.2+');cb(false);return}
+  bmInit(av=>{if(!av){toast('На этом устройстве биометрия недоступна или не настроена');cb(false);return}
+    try{b.requestAccess({reason:'Чтобы открывать «Финансы» по отпечатку или лицу'},ok=>{
+      if(ok){const r=lockRec();if(r){r.bio=1;lockPut(r)}cb(true)}
+      else{toast('Доступ к биометрии не разрешён — его можно включить в настройках Telegram');cb(false)}})}catch{cb(false)}})}
+
+// ---- экран блокировки ----
+const lk=$('#lk');
+const LK={mode:'',buf:'',first:'',n:4,cb:null,busy:false,msg:'',wait:false,tm:0};
+const lkLocked=()=>document.documentElement.classList.contains('locked');
+const BIO_SVG='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 11v4c0 2-1 3.5-2 4.5M8 15c0-2.2 1.8-4 4-4s4 1.8 4 4c0 2.5-.6 4.2-1.8 5.6M5 13a7 7 0 0 1 14 0c0 2-.3 3.5-.8 5M9 7.5A5 5 0 0 1 12 6.6"/></svg>';
+function lkBuild(){
+  lk.innerHTML=`<div class="lkc"><div class="lkt" id="lkt"></div><div class="lks" id="lks"></div><div class="lkd" id="lkd"></div>
+<div class="lkp" id="lkp">${[1,2,3,4,5,6,7,8,9].map(d=>`<button type="button" data-d="${d}" aria-label="${d}">${d}</button>`).join('')}<button type="button" class="ghost" id="lkbio" aria-label="Биометрия" hidden>${BIO_SVG}</button><button type="button" data-d="0" aria-label="0">0</button><button type="button" class="ghost" id="lkbk" aria-label="Стереть">⌫</button></div>
+<div class="lkx"><button type="button" id="lkcan">Отмена</button><button type="button" id="lkn">6 цифр</button><button type="button" id="lkfg">Забыли PIN?</button></div></div>`}
+function lkRender(){
+  const t=$('#lkt'),s=$('#lks'),d=$('#lkd');if(!t)return;
+  t.textContent={unlock:'Введите PIN',confirm:'Введите текущий PIN',new1:'Придумайте PIN',new2:'Повторите PIN'}[LK.mode]||'';
+  s.textContent=LK.msg||'';
+  d.innerHTML=Array.from({length:LK.n},(_,i)=>`<i class="${i<LK.buf.length?'f':''}"></i>`).join('');
+  $('#lkcan').style.display=LK.mode==='unlock'?'none':'';
+  const n6=$('#lkn');n6.style.display=LK.mode==='new1'&&!LK.buf?'':'none';n6.textContent=LK.n===4?'6 цифр':'4 цифры';
+  $('#lkfg').style.display=LK.mode==='unlock'?'':'none';
+  $('#lkbio').hidden=!(LK.mode==='unlock'&&lkBioReady())}
+function lkOpen(mode,cb){const r=lockRec();
+  if(!$('#lkt'))lkBuild();
+  LK.mode=mode;LK.buf='';LK.first='';LK.cb=cb||null;LK.msg='';LK.busy=false;LK.wait=false;LK.n=(mode==='new1'||mode==='new2')?4:(r?r.n:4);
+  lk.classList.add('on');lkRender();lkTick()}
+function lkClose(){lk.classList.remove('on');LK.mode='';LK.cb=null;LK.buf='';clearTimeout(LK.tm)}
+function lkDone(){const cb=LK.cb,was=LK.mode;lkClose();if(was==='unlock')document.documentElement.classList.remove('locked');if(cb)cb()}
+function lkBad(msg){const d=$('#lkd');LK.buf='';LK.msg=msg||'';lkRender();
+  if(d){d.classList.remove('bad');void d.offsetWidth;d.classList.add('bad')}try{navigator.vibrate&&navigator.vibrate(60)}catch{}}
+function lkTick(){clearTimeout(LK.tm);const r=lockRec();
+  if(!r||!LK.mode||!(r.u>Date.now())){if(LK.wait){LK.wait=false;LK.msg='';lkRender()}return}
+  LK.wait=true;LK.buf='';LK.msg='Слишком много попыток. Подождите '+Math.ceil((r.u-Date.now())/1000)+' с';lkRender();LK.tm=setTimeout(lkTick,500)}
+function lkDigit(d){if(LK.busy||LK.wait||!LK.mode||LK.buf.length>=LK.n)return;LK.buf+=d;LK.msg='';lkRender();if(LK.buf.length===LK.n)lkSubmit()}
+function lkBack(){if(LK.busy||LK.wait)return;LK.buf=LK.buf.slice(0,-1);lkRender()}
+async function lkSubmit(){
+  LK.busy=true;const pin=LK.buf,m=LK.mode;
+  try{
+    if(m==='unlock'||m==='confirm'){
+      const r=lockRec();if(!r){lkDone();return}
+      if(await pinCheck(pin)){r.f=0;r.u=0;lockPut(r);lkDone()}
+      else{r.f=(r.f||0)+1;const w=lockoutMs(r.f);r.u=w?Date.now()+w:0;lockPut(r);
+        if(w){lkTick()}else lkBad('Неверный PIN'+(r.f>=3?' · ошибок подряд: '+r.f:''))}}
+    else if(m==='new1'){LK.first=pin;LK.mode='new2';LK.buf='';LK.msg='';lkRender()}
+    else if(m==='new2'){
+      if(pin===LK.first){await pinSet(pin,LK.n);lkDone()}
+      else{LK.mode='new1';LK.first='';lkBad('PIN не совпал — попробуйте ещё раз')}}
+  }catch(e){lkBad('Не удалось проверить PIN')}
+  finally{LK.busy=false}}
+function lkBio(){const b=lkBM();if(!lkBioReady()||LK.mode!=='unlock')return;
+  try{b.authenticate({reason:'Разблокировать «Финансы»'},ok=>{if(ok&&LK.mode==='unlock')lkDone()})}catch{}}
+// «Забыли PIN»: единственный путь — стереть данные приложения на этом устройстве (иначе замок ничего не защищал бы)
+function lkForgot(){const c=lk.querySelector('.lkc');if(!c)return;
+  c.innerHTML=`<div class="lkt">Сбросить PIN?</div><div class="lks lkw">${IN_TG?'Данные на этом устройстве будут стёрты и загружены заново из облака Telegram. PIN будет сброшен.':'Все данные приложения на этом устройстве будут стёрты, PIN сброшен. Без резервной копии JSON вернуть их не получится.'}</div><div class="lkx"><button type="button" id="lkfn">Отмена</button><button type="button" id="lkfy" class="lkdel">Стереть и сбросить</button></div>`}
+function lkWipe(){try{const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf('finapp.')===0)ks.push(k)}ks.forEach(k=>localStorage.removeItem(k))}catch{}
+  try{sessionStorage.clear()}catch{}location.reload()}
+lk.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.d!==undefined&&b.dataset.d!=='')lkDigit(b.dataset.d);
+  else if(b.id==='lkbk')lkBack();else if(b.id==='lkbio')lkBio();
+  else if(b.id==='lkcan')lkClose();
+  else if(b.id==='lkn'){LK.n=LK.n===4?6:4;lkRender()}
+  else if(b.id==='lkfg')lkForgot();
+  else if(b.id==='lkfn'){lkBuild();lkOpen('unlock')}
+  else if(b.id==='lkfy')lkWipe()});
+document.addEventListener('keydown',e=>{if(!lk.classList.contains('on'))return;
+  if(/^\d$/.test(e.key)){lkDigit(e.key);e.preventDefault();e.stopPropagation()}
+  else if(e.key==='Backspace'){lkBack();e.stopPropagation()}
+  else if(e.key==='Escape'){if(LK.mode&&LK.mode!=='unlock')lkClose();e.stopPropagation()}},true);
+
+// ---- когда запирать: при запуске и после возврата (через заданное время) ----
+function lockNow(){const r=lockRec();if(!r)return;if(lk.classList.contains('on')&&LK.mode&&LK.mode!=='unlock')return;
+  document.documentElement.classList.add('locked');
+  try{Voice.stopFor(micMain);Voice.stopFor(micQ)}catch{}
+  try{const a=document.activeElement;if(a&&a.blur)a.blur()}catch{}
+  lkBuild();lkOpen('unlock');if(r.bio)bmInit(()=>{lkRender();lkBio()})}
+let _lkAt=0;
+const lkGone=()=>{const r=lockRec();if(!r||lkLocked())return;if((r.d==null?60:r.d)===0)lockNow();else if(!_lkAt)_lkAt=Date.now()};
+const lkBack_=()=>{const r=lockRec();if(r&&!lkLocked()&&_lkAt&&Date.now()-_lkAt>=(r.d==null?60:r.d)*1000)lockNow();_lkAt=0};
+document.addEventListener('visibilitychange',()=>{document.hidden?lkGone():lkBack_()});
+if(IN_TG){try{TGW.onEvent('deactivated',lkGone);TGW.onEvent('activated',lkBack_)}catch{}}
+(function(){const r=lockRec();
+  if(!r){document.documentElement.classList.remove('locked');return}
+  document.documentElement.classList.add('locked');lkBuild();lkOpen('unlock');if(r.bio)bmInit(()=>{lkRender();lkBio()})})();
+
+// ---- окно «Защита» в настройках ----
+function renderLockCf(){const r=lockRec(),b=lkBM(),dl=[[0,'Сразу'],[60,'1 мин'],[300,'5 мин'],[900,'15 мин']],cd_=r&&r.d!=null?r.d:60;
+  cf.innerHTML=`<div class="eh"><b>Защита</b>${XB}</div>`+(r
+    ?`<label>PIN-код<span style="color:var(--g)">включён · ${r.n} цифры</span></label>
+<label>Блокировать через<span class="sgm" id="lkdl">${dl.map(([s,l])=>`<button type="button" data-s="${s}" class="${cd_===s?'on':''}">${l}</button>`).join('')}</span></label>
+${b?`<label>Вход по биометрии<button type="button" class="tg${r.bio?' on':''}" id="lkbm" role="switch" aria-checked="${!!r.bio}" aria-label="Вход по биометрии"></button></label>`:''}
+<label>Изменить<span style="display:flex;gap:8px"><button type="button" class="sm" id="lkchg">Сменить PIN</button><button type="button" class="sm del" id="lkoff">Выключить</button></span></label>`
+    :`<div class="hint2" style="font-size:13px;padding:6px 0 10px">Приложение будет закрываться PIN-кодом при запуске и после возврата в него.</div>
+<label>PIN-код<button type="button" class="sm pr" id="lkon">Включить</button></label>`)+
+`<div class="hint2">PIN хранится только на этом устройстве и не попадает ни в копию JSON, ни в облако Telegram. Если забыли PIN, вход — через стирание данных на устройстве${IN_TG?' (из облака Telegram они загрузятся заново)':' (пригодится копия JSON)'}.</div>`;
+  const on=$('#lkon');if(on)on.onclick=()=>{if(!lkCrypto()){toast('PIN недоступен: нужен защищённый адрес (https)');return}lkOpen('new1',()=>{renderCf();renderSt();toast('PIN включён')})};
+  const ch=$('#lkchg');if(ch)ch.onclick=()=>lkOpen('confirm',()=>lkOpen('new1',()=>{renderCf();toast('PIN изменён')}));
+  const off=$('#lkoff');if(off)off.onclick=()=>lkOpen('confirm',()=>{lockPut(null);renderCf();renderSt();toast('PIN выключен')});
+  const dg=$('#lkdl');if(dg)dg.onclick=e=>{const x=e.target.closest('button[data-s]');if(!x)return;const q=lockRec();if(!q)return;q.d=+x.dataset.s;lockPut(q);dg.querySelectorAll('button').forEach(y=>y.classList.toggle('on',y===x))};
+  const bm=$('#lkbm');if(bm)bm.onclick=()=>{const q=lockRec();if(!q)return;
+    if(q.bio){q.bio=0;lockPut(q);renderCf();return}
+    bioEnable(ok=>{renderCf();if(ok)toast('Биометрия включена')})}}
+
 </script>
 <script>
 // ---- клавиатура: окно не меняет размер рывком, а плавно уезжает вверх ----
@@ -3467,7 +3764,8 @@ async function cloudSync(why){
   const hold=ms=>{root.classList.add('nocr');clearTimeout(t);t=setTimeout(()=>root.classList.remove('nocr'),ms)};
   document.addEventListener('focusin',e=>{if(e.target&&e.target.matches&&e.target.matches('input,textarea'))hold(1000)},true);
 })();
-</script><script>
+</script>
+<script>
 // ---------- PWA: офлайн-режим (service worker) ----------
 if('serviceWorker' in navigator&&location.protocol!=='file:'){
   const sw=navigator.serviceWorker,hadCtl=!!sw.controller;let reloading=false;
@@ -3504,7 +3802,8 @@ if('serviceWorker' in navigator&&location.protocol!=='file:'){
   setTimeout(leave,Math.max(0,SHOW-(performance.now()-t0)));
   setTimeout(leave,4500);
 })();
-</script><script>
+</script>
+<script>
 /* ================= Обучение: знакомство при первом входе и подсказки по разделам ================= */
 (function(){
 'use strict';

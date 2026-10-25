@@ -1,6 +1,6 @@
 // Версия теперь нужна только для чистки старого кэша; обновления приложения подхватываются сами:
 // страница и скрипты берутся из сети первыми (кэш — только запасной вариант без интернета).
-const VERSION='finance-v8';
+const VERSION='finance-v9';
 const SHELL=['./','index.html','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png','icons/apple-touch-icon.png','icons/favicon-32.png'];
 const WAIT=4000; // сколько ждём сеть, прежде чем открыть сохранённую копию
 
@@ -41,12 +41,4 @@ self.addEventListener('fetch',e=>{
   e.respondWith(caches.match(r,{ignoreSearch:true}).then(hit=>hit||fetch(r).then(res=>{
     if(res&&res.ok){const copy=res.clone();caches.open(VERSION).then(c=>c.put(r,copy))}
     return res})));
-});
-
-// Напоминания о сроках: тап по уведомлению открывает приложение.
-self.addEventListener('notificationclick',e=>{
-  e.notification.close();
-  e.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(cs=>{
-    for(const c of cs){if('focus' in c)return c.focus()}
-    return self.clients.openWindow('./')}));
 });
